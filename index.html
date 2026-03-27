@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OnTheW4x — Post Generator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#080808;--surface:#111;--surface2:#1a1a1a;--border:#222;--border2:#333;--white:#f0ede8;--muted:#555;--muted2:#888;--mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif}
+  html,body{background:var(--bg);color:var(--white);font-family:var(--sans);min-height:100vh}
+  body{display:flex;flex-direction:column;align-items:center;padding:48px 16px 80px}
+  .header{text-align:center;margin-bottom:40px}
+  .brand{font-family:var(--mono);font-size:10px;letter-spacing:.3em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+  h1{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--white)}
+  .tagline{font-size:13px;color:var(--muted2);margin-top:6px;font-weight:300}
+  .card{width:100%;max-width:580px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:20px}
+  .section-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:8px}
+  .input-row{display:flex;gap:8px}
+  .track-input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:13px;color:var(--white);outline:none;transition:border-color .15s}
+  .track-input::placeholder{color:var(--muted);font-style:italic}
+  .track-input:focus{border-color:var(--muted2)}
+  .btn-go{background:var(--white);color:var(--bg);border:none;border-radius:10px;padding:14px 20px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:opacity .15s;white-space:nowrap}
+  .btn-go:hover{opacity:.85}
+  .btn-go:disabled{opacity:.3;cursor:not-allowed}
+  .hint{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:6px}
+  .parsed-preview{font-size:11px;color:var(--muted2);font-family:var(--mono);margin-top:6px;min-height:16px;transition:color .2s}
+  .parsed-preview.ok{color:#5a9}
+  .loader{display:none;flex-direction:column;gap:8px;padding:4px 0}
+  .loader.visible{display:flex}
+  .step{font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px;transition:color .3s}
+  .step.active{color:var(--white)}
+  .step.done{color:var(--muted2)}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
+  .step.active .dot{background:var(--white);animation:pulse .8s ease-in-out infinite}
+  .step.done .dot{background:var(--muted2);animation:none}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .error-box{display:none;background:#1a0a0a;border:1px solid #3a1515;border-radius:10px;padding:14px 16px;font-size:12px;color:#e88;font-family:var(--mono);line-height:1.6}
+  .error-box.visible{display:block}
+  .result{display:none;flex-direction:column;gap:20px}
+  .result.visible{display:flex}
+  .track-bar{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .track-bar-artist{font-family:var(--mono);font-size:12px;color:var(--white);font-weight:700}
+  .track-bar-meta{font-size:11px;color:var(--muted2);margin-top:2px}
+  .genre-pill{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:20px;flex-shrink:0}
+  .genre-pill.house{background:#f0ede8;color:#080808}
+  .genre-pill.techno{background:#1a1a1a;color:#f0ede8;border:1px solid #333}
+  .visual-row{display:flex;gap:14px;align-items:flex-start}
+  .visual-box{flex:1;display:flex;flex-direction:column;gap:8px}
+  .visual-label{font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase}
+  .visual-box canvas,.visual-box img{width:100%;border-radius:8px;display:block}
+  .cover-img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block;background:var(--surface2)}
+
+  /* PHOTO PICKER */
+  .photo-section{}
+  .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+  .photo-thumb{aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;border:2.5px solid transparent;transition:border-color .15s;position:relative}
+  .photo-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .photo-thumb:hover{border-color:var(--muted2)}
+  .photo-thumb.selected{border-color:var(--white)}
+  .photo-thumb.selected::after{content:'✓';position:absolute;top:6px;right:6px;background:var(--white);color:var(--bg);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+  .photo-actions{display:flex;gap:8px;margin-top:8px}
+  .btn-more{flex:1;background:transparent;color:var(--muted2);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:color .15s}
+  .btn-more:hover{color:var(--white)}
+  .btn-dl-photo{flex:1;background:var(--surface2);color:var(--white);border:1px solid var(--border2);border-radius:8px;padding:10px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:border-color .15s}
+  .btn-dl-photo:hover{border-color:var(--muted2)}
+  .btn-dl-photo:disabled{opacity:.3;cursor:not-allowed}
+  .kw-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .kw-pill{font-family:var(--mono);font-size:10px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;color:var(--muted2)}
+
+  .caption-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+  .caption-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:13px;line-height:1.8;color:var(--white);white-space:pre-wrap;min-height:80px}
+  .meta-row{display:flex;gap:10px;flex-wrap:wrap}
+  .meta-chip{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted2);display:flex;gap:6px;align-items:center}
+  .meta-chip span{color:var(--white)}
+  .actions{display:flex;gap:10px}
+  .btn-dl{flex:1;background:var(--white);color:var(--bg);border:none;border-radius:10px;padding:14px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:opacity .15s}
+  .btn-dl:hover{opacity:.85}
+  .btn-copy{flex:1;background:transparent;color:var(--white);border:1px solid var(--border2);border-radius:10px;padding:14px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:border-color .15s}
+  .btn-copy:hover{border-color:var(--muted2)}
+  .btn-reset{background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:11px;cursor:pointer}
+  .btn-reset:hover{color:var(--white)}
+  .manual-upload{background:#111a0a;border:1px solid #2a3a1a;border-radius:10px;padding:14px 16px}
+  .mu-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:#888;text-transform:uppercase;margin-bottom:8px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--white);color:var(--bg);padding:10px 20px;border-radius:8px;font-family:var(--mono);font-size:12px;font-weight:700;transition:transform .25s ease;pointer-events:none;z-index:100}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="brand">onthew4x</div>
+  <h1>Post Generator</h1>
+  <p class="tagline">Tapez la track — visuel + photo + caption générés automatiquement</p>
+</header>
+
+<div class="card">
+  <div>
+    <span class="section-label">Track</span>
+    <div class="input-row">
+      <input class="track-input" id="track-input" type="text"
+        placeholder="Jeff Mills - The Bells (Techno)"
+        autocomplete="off" spellcheck="false"
+        oninput="previewParse(this.value)"/>
+      <button class="btn-go" id="btn-go" onclick="generate()">Générer</button>
+    </div>
+    <div class="hint">Format : Artiste - Titre (House) ou (Techno) — toujours à la fin</div>
+    <div class="parsed-preview" id="parsed-preview"></div>
+  </div>
+
+  <div class="loader" id="loader">
+    <div class="step" id="s1"><div class="dot"></div>Recherche cover Spotify...</div>
+    <div class="step" id="s2"><div class="dot"></div>Recherche release originale + mots-clés photo...</div>
+    <div class="step" id="s3"><div class="dot"></div>Chargement des photos thématiques...</div>
+    <div class="step" id="s4"><div class="dot"></div>Génération caption + circle crop...</div>
+  </div>
+
+  <div class="error-box" id="err"></div>
+
+  <div class="result" id="result">
+
+    <div class="track-bar">
+      <div>
+        <div class="track-bar-artist" id="r-artist"></div>
+        <div class="track-bar-meta" id="r-meta"></div>
+      </div>
+      <div class="genre-pill" id="r-pill"></div>
+    </div>
+
+    <!-- COVER -->
+    <div class="visual-row">
+      <div class="visual-box">
+        <div class="visual-label">Cover originale</div>
+        <img class="cover-img" id="cover-img" src="" alt="cover">
+      </div>
+      <div class="visual-box">
+        <div class="visual-label">Visuel Instagram</div>
+        <canvas id="canvas"></canvas>
+      </div>
+    </div>
+
+    <div id="manual-zone"></div>
+
+    <!-- PHOTO PICKER -->
+    <div class="photo-section" id="photo-section" style="display:none">
+      <span class="section-label">Photo thématique</span>
+      <div class="kw-row" id="kw-row"></div>
+      <div class="photo-grid" id="photo-grid"></div>
+      <div class="photo-actions">
+        <button class="btn-more" onclick="loadMorePhotos()">↻ Autres photos</button>
+        <button class="btn-dl-photo" id="btn-dl-photo" onclick="dlPhoto()" disabled>↓ Télécharger la photo</button>
+      </div>
+    </div>
+
+    <!-- CAPTION -->
+    <div>
+      <div class="caption-label">Caption</div>
+      <div class="caption-box" id="caption"></div>
+    </div>
+
+    <div class="meta-row" id="meta"></div>
+
+    <div class="actions">
+      <button class="btn-dl" onclick="dlImage()">↓ Cover 1080×1080</button>
+      <button class="btn-copy" onclick="copyCaption()">Copier caption</button>
+      <button class="btn-reset" onclick="reset()">↺ Nouveau</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Copié !</div>
+
+<script>
+const ANTHROPIC_KEY = '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';
+const SPOTIFY_CLIENT_ID = '20a6b538a7d64b3f99e08397dee6b669';
+const SPOTIFY_CLIENT_SECRET = '21b0cacf77d44b5790ffd53c629202c7';
+const UNSPLASH_KEY = 'MGrzznKHhzvmPdmpGu9j9VdF3Y9wFc9VICJZHC6eUq8';
+const PROXY = 'https://w4x-img.onthew4x.workers.dev/?url=';
+
+let spotifyToken = null, spotifyTokenExpiry = 0;
+let data = null, canvasUrl = null;
+let currentKeywords = [], currentPhotoPage = 1, selectedPhotoUrl = null, selectedPhotoFull = null;
+
+// ── PARSER ───────────────────────────────────────────────────────────────────
+function parseInput(raw) {
+  const genreMatch = raw.match(/\s*\((house|techno)\)\s*$/i);
+  const genre = genreMatch ? genreMatch[1].toLowerCase() : 'techno';
+  const withoutGenre = genreMatch ? raw.slice(0, raw.lastIndexOf(genreMatch[0])).trim() : raw.trim();
+  const sep = withoutGenre.indexOf(' - ');
+  const artist = sep > -1 ? withoutGenre.slice(0, sep).trim() : withoutGenre.trim();
+  const title  = sep > -1 ? withoutGenre.slice(sep + 3).trim() : '';
+  return { artist, title, genre };
+}
+
+function previewParse(val) {
+  const el = document.getElementById('parsed-preview');
+  if (!val.trim()) { el.textContent = ''; el.className = 'parsed-preview'; return; }
+  const { artist, title, genre } = parseInput(val);
+  if (artist && title) {
+    el.textContent = `→ Artiste: "${artist}"  |  Titre: "${title}"  |  Genre: ${genre}`;
+    el.className = 'parsed-preview ok';
+  } else {
+    el.textContent = 'Ajoutez (House) ou (Techno) à la fin';
+    el.className = 'parsed-preview';
+  }
+}
+
+// ── SPOTIFY ──────────────────────────────────────────────────────────────────
+async function getSpotifyToken() {
+  if (spotifyToken && Date.now() < spotifyTokenExpiry) return spotifyToken;
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic ' + btoa(SPOTIFY_CLIENT_ID + ':' + SPOTIFY_CLIENT_SECRET) },
+    body: 'grant_type=client_credentials'
+  });
+  const d = await res.json();
+  spotifyToken = d.access_token;
+  spotifyTokenExpiry = Date.now() + (d.expires_in - 60) * 1000;
+  return spotifyToken;
+}
+
+async function searchSpotify(artist, title) {
+  const token = await getSpotifyToken();
+  for (const q of [`track:${title} artist:${artist}`, `${title} ${artist}`]) {
+    const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=1`, { headers: { 'Authorization': 'Bearer ' + token } });
+    const d = await res.json();
+    const track = d?.tracks?.items?.[0];
+    if (track) return { coverUrl: track.album.images[0]?.url || '', spotifyLabel: track.album.label || '', spotifyYear: track.album.release_date?.split('-')[0] || '', albumName: track.album.name };
+  }
+  return null;
+}
+
+// ── UNSPLASH PHOTO PICKER ────────────────────────────────────────────────────
+async function fetchPhotos(keywords, page = 1) {
+  const query = keywords.slice(0, 3).join(' ');
+  const unsplashUrl = 'https://api.unsplash.com/search/photos?query=' + encodeURIComponent(query) + '&per_page=6&page=' + page + '&orientation=squarish&client_id=' + UNSPLASH_KEY;
+  try {
+    const res = await fetch(PROXY + encodeURIComponent(unsplashUrl));
+    const text = await res.text();
+    const d = JSON.parse(text);
+    if (d.results && d.results.length > 0) return d.results;
+    // Fallback: try direct if proxy returns empty
+    const res2 = await fetch(unsplashUrl);
+    const d2 = await res2.json();
+    return d2.results || [];
+  } catch(e) {
+    console.error('Unsplash error:', e);
+    // Fallback: direct call
+    try {
+      const res2 = await fetch(unsplashUrl);
+      const d2 = await res2.json();
+      return d2.results || [];
+    } catch(e2) { return []; }
+  }
+}
+
+function renderPhotos(photos) {
+  const grid = document.getElementById('photo-grid');
+  grid.innerHTML = '';
+  photos.forEach(p => {
+    const thumb = document.createElement('div');
+    thumb.className = 'photo-thumb';
+    thumb.innerHTML = `<img src="${p.urls.small}" loading="lazy" alt="${p.alt_description||''}">`;
+    thumb.onclick = () => {
+      document.querySelectorAll('.photo-thumb').forEach(t => t.classList.remove('selected'));
+      thumb.classList.add('selected');
+      selectedPhotoUrl = p.urls.small;
+      selectedPhotoFull = p.urls.full;
+      document.getElementById('btn-dl-photo').disabled = false;
+    };
+    grid.appendChild(thumb);
+  });
+}
+
+async function loadMorePhotos() {
+  const btn = document.querySelector('.btn-more');
+  btn.textContent = '...';
+  btn.disabled = true;
+  // Alternate between paginating and rotating keywords for variety
+  currentPhotoPage++;
+  // Try next page first, fallback to rotating keywords
+  let photos = await fetchPhotos(currentKeywords, currentPhotoPage);
+  if (!photos || photos.length === 0) {
+    // Rotate keywords: move first keyword to end
+    currentKeywords = [...currentKeywords.slice(1), currentKeywords[0]];
+    currentPhotoPage = 1;
+    photos = await fetchPhotos(currentKeywords, 1);
+  }
+  if (photos && photos.length > 0) renderPhotos(photos);
+  btn.textContent = '↻ Autres photos';
+  btn.disabled = false;
+}
+
+function dlPhoto() {
+  if (!selectedPhotoFull) return;
+  const a = document.createElement('a');
+  a.href = selectedPhotoFull;
+  a.download = 'w4x_photo_thematique.jpg';
+  a.target = '_blank';
+  a.click();
+}
+
+// ── CLAUDE SYSTEM ─────────────────────────────────────────────────────────────
+const SYSTEM = `You are the content assistant for @onthew4x, an Instagram account posting underground house and techno daily for DJs, diggers and producers.
+
+Respond ONLY with a single raw JSON object. No markdown, no backticks, no explanation. Just the JSON.
+
+Fields:
+{
+  "artist": "",
+  "title": "",
+  "label": "",
+  "year": "",
+  "genre": "house" or "techno",
+  "label_city": "",
+  "label_country": "",
+  "artist_instagram": "",
+  "label_instagram": "",
+  "photo_keywords": ["keyword1", "keyword2", "keyword3", "keyword4"],
+  "caption": ""
+}
+
+CRITICAL RULE — original label and year:
+Search Discogs, Bandcamp, Beatport, RA, and Juno. Collect ALL release dates. Use the EARLIEST found. Ignore compilations and reissues.
+
+photo_keywords: Generate 4 evocative English keywords for searching a thematic photo on Unsplash that MATCHES THE MOOD AND ENERGY of this specific track. Think like an art director:
+- For acid/industrial techno: "industrial machinery", "concrete brutalism", "dark corridor", "abstract neon"
+- For deep hypnotic techno: "fog forest", "abandoned building", "long exposure light", "dark silhouette"
+- For disco/funk house: "70s party", "dance floor crowd", "colorful portrait", "vintage fashion"
+- For deep emotional house: "cinematic portrait", "smoky bar", "blue hour city", "melancholy figure"
+- For minimal techno: "geometric architecture", "empty warehouse", "black white abstract", "urban texture"
+- Be specific and visual — NOT generic like "music" or "techno" — Unsplash responds better to visual/mood words
+- Mix abstract concepts with concrete visual subjects for better results
+
+caption — copy these examples exactly:
+
+EXAMPLE 1 (techno):
+": Mike Parker – Resonator 1
+Label: Defective Records, 1997
+
+An old-school cut that never disappoints.
+
+Low-end pressure, resonant pulses, minimal progression. A slow immersive drift made with acid."
+
+EXAMPLE 2 (house):
+": CZR feat Undagroundiskofunk – Bad Enough
+Label: Subliminal, 1999
+
+A track that will make your crowd jump with a perfect mix of strong house, disco funk and cheerful vocals.
+
+Pure sound of happiness for peak time."
+
+STRICT RULES for caption:
+- Line 1: EXACTLY ": Artist – Title" — colon-space, NO emoji, NO 🖤, NO 🤍, nothing before the colon
+- Line 2: "Label: LabelName, Year" — original label and earliest year
+- Blank line
+- One sentence specific to this track's identity or story. Be descriptive and precise — name the actual feeling, energy or context. NEVER use ANY of these: "needs no introduction", "dancefloor weapon", "timeless", "underground gem", "banger", "heavy hitter", "serious weight", "underground circuit", "speaks for itself", "classic", "iconic", "legendary". If you catch yourself writing a cliché, rewrite it.
+- Blank line
+- 1-2 sentences describing the actual sound: specific elements, groove, texture, tempo feel. Be as concrete as possible — name the actual sonic ingredients.
+
+artist_instagram: Search "[artist name] instagram" and return real @handle or "".
+label_instagram: Search "[label name] instagram" and return real @handle or "".`;
+
+// ── MAIN ──────────────────────────────────────────────────────────────────────
+function setStep(n) {
+  ['s1','s2','s3','s4'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    el.className = 'step' + (i+1 < n ? ' done' : i+1 === n ? ' active' : '');
+  });
+}
+
+async function generate() {
+  const raw = document.getElementById('track-input').value.trim();
+  if (!raw) return;
+  const { artist, title, genre } = parseInput(raw);
+  if (!artist || !title) {
+    document.getElementById('err').textContent = 'Format invalide — ex: Artiste - Titre (House)';
+    document.getElementById('err').classList.add('visible');
+    return;
+  }
+
+  document.getElementById('result').classList.remove('visible');
+  document.getElementById('err').classList.remove('visible');
+  document.getElementById('loader').classList.add('visible');
+  document.getElementById('btn-go').disabled = true;
+  document.getElementById('manual-zone').innerHTML = '';
+  document.getElementById('photo-section').style.display = 'none';
+  selectedPhotoUrl = null; selectedPhotoFull = null;
+  setStep(1);
+
+  try {
+    // Step 1 — Spotify cover
+    let coverUrl = '', spotifyData = null;
+    try { spotifyData = await searchSpotify(artist, title); coverUrl = spotifyData?.coverUrl || ''; } catch(e) {}
+
+    setStep(2);
+
+    // Step 2 — Claude: label, caption, photo keywords
+    const hint = spotifyData
+      ? `Spotify: label="${spotifyData.spotifyLabel}", year="${spotifyData.spotifyYear}", album="${spotifyData.albumName}". Cross-check against original sources.`
+      : 'Not on Spotify. Search Bandcamp, Discogs, Beatport, RA.';
+
+    // Try Cloudflare Worker first (Safari/iOS), fallback to direct (Chrome/desktop)
+    let res;
+    try {
+      res = await fetch('https://w4x-img.onthew4x.workers.dev/api/claude', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+          system: SYSTEM,
+          messages: [{ role: 'user', content: `Artist: ${artist}\nTitle: ${title}\nGenre: ${genre}\n${hint}\n\nSearch for original release. Find Instagram handles. Generate photo_keywords for Unsplash that match the mood of this specific track. Return JSON only.` }]
+        })
+      });
+      if (!res.ok) throw new Error('worker failed');
+    } catch(workerErr) {
+      res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+          system: SYSTEM,
+          messages: [{ role: 'user', content: `Artist: ${artist}\nTitle: ${title}\nGenre: ${genre}\n${hint}\n\nSearch for original release. Find Instagram handles. Generate photo_keywords for Unsplash that match the mood of this specific track. Return JSON only.` }]
+        })
+      });
+    }
+
+    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
+    const payload = await res.json();
+
+    const textBlock = payload.content?.find(b => b.type === 'text');
+    if (!textBlock?.text) throw new Error('Pas de réponse texte');
+
+    let txt = textBlock.text.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
+    const s = txt.indexOf('{'), e2 = txt.lastIndexOf('}');
+    if (s < 0 || e2 < 0) throw new Error('Réponse invalide — réessayez');
+    data = JSON.parse(txt.slice(s, e2 + 1));
+    data.genre = genre;
+
+    // Clean caption
+    const lines = data.caption.split('\n');
+    lines[0] = lines[0].replace(/^[^:]*/, '').replace(/^:\s*/, ': ');
+    if (!lines[0].startsWith(': ')) lines[0] = ': ' + lines[0];
+    data.caption = lines.join('\n');
+
+    // Step 3 — Fetch Unsplash photos
+    setStep(3);
+    currentKeywords = data.photo_keywords || [genre, 'abstract', 'dark', 'moody'];
+    currentPhotoPage = 1;
+
+    // Show keywords
+    const kwRow = document.getElementById('kw-row');
+    kwRow.innerHTML = currentKeywords.map(k => `<div class="kw-pill">${k}</div>`).join('');
+
+    const photos = await fetchPhotos(currentKeywords, 1);
+    if (photos.length > 0) {
+      renderPhotos(photos);
+      document.getElementById('photo-section').style.display = 'block';
+    }
+
+    // Step 4 — Canvas
+    setStep(4);
+    await drawCanvas(coverUrl, genre);
+    render(data);
+
+  } catch(err) {
+    document.getElementById('loader').classList.remove('visible');
+    document.getElementById('btn-go').disabled = false;
+    document.getElementById('err').textContent = 'Erreur : ' + err.message;
+    document.getElementById('err').classList.add('visible');
+  }
+}
+
+// ── CANVAS ────────────────────────────────────────────────────────────────────
+function drawCanvas(url, genre) {
+  return new Promise(resolve => {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const S=1080, C=Math.round(S*.98), O=Math.round((S-C)/2);
+    canvas.width=S; canvas.height=S;
+    ctx.fillStyle = genre==='house'?'#ffffff':'#000000';
+    ctx.fillRect(0,0,S,S);
+    if (!url) { drawFallback(ctx,S,C,O,genre); canvasUrl=canvas.toDataURL(); showManual(); resolve(); return; }
+    loadImg(url, false, img => {
+      if (img) { paint(ctx,img,S,C,O); document.getElementById('cover-img').src=img.src; canvasUrl=canvas.toDataURL('image/png'); resolve(); }
+      else loadImg(PROXY+encodeURIComponent(url), true, img2 => {
+        if (img2) { paint(ctx,img2,S,C,O); document.getElementById('cover-img').src=img2.src; canvasUrl=canvas.toDataURL('image/png'); }
+        else { drawFallback(ctx,S,C,O,genre); canvasUrl=canvas.toDataURL('image/png'); showManual(); }
+        resolve();
+      });
+    });
+  });
+}
+
+function loadImg(src, proxy, cb) {
+  const img = new Image();
+  if (!proxy) img.crossOrigin='anonymous';
+  const t = setTimeout(()=>{ img.src=''; cb(null); }, 8000);
+  img.onload=()=>{ clearTimeout(t); cb(img); };
+  img.onerror=()=>{ clearTimeout(t); cb(null); };
+  img.src=src;
+}
+
+function paint(ctx, img, S, C, O) {
+  const sw=img.width, sh=img.height, side=Math.min(sw,sh);
+  ctx.save(); ctx.beginPath(); ctx.arc(O+C/2,O+C/2,C/2,0,Math.PI*2); ctx.clip();
+  ctx.drawImage(img,(sw-side)/2,(sh-side)/2,side,side,O,O,C,C); ctx.restore();
+}
+
+function drawFallback(ctx,S,C,O,genre) {
+  ctx.save(); ctx.beginPath(); ctx.arc(O+C/2,O+C/2,C/2,0,Math.PI*2);
+  ctx.fillStyle=genre==='house'?'#e0e0e0':'#1a1a1a'; ctx.fill();
+  ctx.font='18px monospace'; ctx.fillStyle=genre==='house'?'#999':'#555';
+  ctx.textAlign='center'; ctx.fillText('Glissez la cover ci-dessous',O+C/2,O+C/2); ctx.restore();
+}
+
+function showManual() {
+  document.getElementById('cover-img').style.opacity='.3';
+  document.getElementById('manual-zone').innerHTML=`
+    <div class="manual-upload">
+      <div class="mu-label">Cover non trouvée — glissez-la depuis Bandcamp ou Discogs</div>
+      <input type="file" accept="image/*" style="font-size:12px;color:var(--white);font-family:var(--mono);cursor:pointer;width:100%" onchange="applyManual(this.files[0])">
+    </div>`;
+}
+
+function applyManual(file) {
+  if (!file||!data) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    document.getElementById('cover-img').src=e.target.result;
+    document.getElementById('cover-img').style.opacity='1';
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d');
+      const S=1080,C=Math.round(S*.98),O=Math.round((S-C)/2);
+      canvas.width=S; canvas.height=S;
+      ctx.fillStyle=data.genre==='house'?'#ffffff':'#000000'; ctx.fillRect(0,0,S,S);
+      paint(ctx,img,S,C,O); canvasUrl=canvas.toDataURL('image/png');
+      document.getElementById('manual-zone').innerHTML='';
+    };
+    img.src=e.target.result;
+  };
+  r.readAsDataURL(file);
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render(d) {
+  document.getElementById('loader').classList.remove('visible');
+  document.getElementById('r-artist').textContent=`${d.artist} – ${d.title}`;
+  document.getElementById('r-meta').textContent=`${d.label} · ${d.year}`;
+  const pill=document.getElementById('r-pill');
+  pill.textContent=d.genre==='house'?'House':'Techno';
+  pill.className=`genre-pill ${d.genre}`;
+  document.getElementById('caption').textContent=d.caption;
+  let chips='';
+  if(d.label_city) chips+=`<div class="meta-chip">📍 Localisation <span>${d.label_city}, ${d.label_country}</span></div>`;
+  if(d.artist_instagram) chips+=`<div class="meta-chip">Tag artiste <span>${d.artist_instagram}</span></div>`;
+  if(d.label_instagram) chips+=`<div class="meta-chip">Tag label <span>${d.label_instagram}</span></div>`;
+  document.getElementById('meta').innerHTML=chips;
+  document.getElementById('result').classList.add('visible');
+  document.getElementById('btn-go').disabled=false;
+}
+
+function dlImage() {
+  if(!canvasUrl) return;
+  const a=document.createElement('a');
+  a.href=canvasUrl;
+  a.download=`${(data?.artist||'cover').replace(/\s+/g,'_')}_${(data?.title||'track').replace(/\s+/g,'_')}_w4x.png`;
+  a.click();
+}
+
+function copyCaption() {
+  navigator.clipboard.writeText(document.getElementById('caption').textContent).then(()=>{
+    const t=document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),1800);
+  });
+}
+
+function reset() {
+  data=null; canvasUrl=null; selectedPhotoUrl=null; selectedPhotoFull=null;
+  document.getElementById('result').classList.remove('visible');
+  document.getElementById('err').classList.remove('visible');
+  document.getElementById('loader').classList.remove('visible');
+  document.getElementById('track-input').value='';
+  document.getElementById('parsed-preview').textContent='';
+  document.getElementById('manual-zone').innerHTML='';
+  document.getElementById('photo-section').style.display='none';
+  document.getElementById('btn-go').disabled=false;
+}
+
+document.getElementById('track-input').addEventListener('keydown', e=>{ if(e.key==='Enter') generate(); });
+</script>
+</body>
+</html>
