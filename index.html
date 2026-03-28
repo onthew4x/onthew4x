@@ -431,7 +431,13 @@ async function generate() {
 
     // Step 3 — Fetch Unsplash photos
     setStep(3);
-    currentKeywords = data.photo_keywords || [genre, 'abstract', 'dark', 'moody'];
+    // Generate fallback keywords from genre if photo_keywords missing
+    const defaultKw = genre === 'techno' 
+      ? ['dark industrial', 'concrete brutalism', 'urban night', 'abstract machine']
+      : ['vintage dance', 'warm light', 'disco party', 'soul music'];
+    currentKeywords = (data.photo_keywords && data.photo_keywords.length > 0) 
+      ? data.photo_keywords 
+      : defaultKw;
     currentPhotoPage = 1;
 
     // Show keywords
