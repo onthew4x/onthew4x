@@ -321,7 +321,11 @@ Fields:
 }
 
 CRITICAL RULE — original label and year:
-Search Discogs, Bandcamp, Beatport, RA, and Juno. Collect ALL release dates. Use the EARLIEST found. Ignore compilations and reissues.
+You MUST search the web. Do maximum 3 searches total. Search in this order:
+1. "[artist] [title] bandcamp" 
+2. "[artist] [title] discogs"
+3. "[artist] [title] beatport" only if needed
+Use the EARLIEST release date found. Ignore compilations and reissues. Be fast.
 
 photo_keywords: Generate 4 evocative English keywords for searching a thematic photo on Unsplash that MATCHES THE MOOD AND ENERGY of this specific track. Think like an art director:
 - For acid/industrial techno: "industrial machinery", "concrete brutalism", "dark corridor", "abstract neon"
@@ -406,8 +410,9 @@ async function generate() {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         system: SYSTEM,
-        messages: [{ role: 'user', content: `Artist: ${artist}\nTitle: ${title}\nGenre: ${genre}\n${hint}\n\nUse your knowledge to find the original release label and year. Find Instagram handles. Generate photo_keywords for Unsplash that match the mood of this specific track. Return JSON only.` }]
+        messages: [{ role: 'user', content: `Artist: ${artist}\nTitle: ${title}\nGenre: ${genre}\n${hint}\n\nSearch Bandcamp, Discogs, Beatport AND Resident Advisor for this track. Cross-check all sources and use the earliest confirmed original release date and label. Also search Instagram handles for artist and label. Generate photo_keywords for Unsplash matching the track mood. Return JSON only. Return JSON only.` }]
       })
     });
 
