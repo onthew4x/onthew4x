@@ -406,9 +406,8 @@ async function generate() {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         system: SYSTEM,
-        messages: [{ role: 'user', content: `Artist: ${artist}\nTitle: ${title}\nGenre: ${genre}\n${hint}\n\nSearch for original release. Find Instagram handles. Generate photo_keywords for Unsplash that match the mood of this specific track. Return JSON only.` }]
+        messages: [{ role: 'user', content: `Artist: ${artist}\nTitle: ${title}\nGenre: ${genre}\n${hint}\n\nUse your knowledge to find the original release label and year. Find Instagram handles. Generate photo_keywords for Unsplash that match the mood of this specific track. Return JSON only.` }]
       })
     });
 
