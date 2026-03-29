@@ -401,7 +401,10 @@ async function generate() {
       ? `Spotify: label="${spotifyData.spotifyLabel}", year="${spotifyData.spotifyYear}", album="${spotifyData.albumName}". Cross-check against original sources.`
       : 'Not on Spotify. Search Bandcamp, Discogs, Beatport, RA.';
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 90000);
     const res = await fetch('https://w4x-img.onthew4x.workers.dev/api/claude', {
+      signal: controller.signal,
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
@@ -412,7 +415,7 @@ async function generate() {
       })
     });
 
-    clearTimeout(timeout);
+    clearTimeout(timeoutId);
     if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
     const payload = await res.json();
 
