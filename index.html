@@ -171,7 +171,7 @@
 <div class="toast" id="toast">Copié !</div>
 
 <script>
-const ANTHROPIC_KEY = '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';
+const ANTHROPIC_KEY = ''; // Key in Cloudflare Worker
 const SPOTIFY_CLIENT_ID = '20a6b538a7d64b3f99e08397dee6b669';
 const SPOTIFY_CLIENT_SECRET = '21b0cacf77d44b5790ffd53c629202c7';
 const UNSPLASH_KEY = 'MGrzznKHhzvmPdmpGu9j9VdF3Y9wFc9VICJZHC6eUq8';
@@ -401,18 +401,18 @@ async function generate() {
       ? `Spotify: label="${spotifyData.spotifyLabel}", year="${spotifyData.spotifyYear}", album="${spotifyData.albumName}". Cross-check against original sources.`
       : 'Not on Spotify. Search Bandcamp, Discogs, Beatport, RA.';
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('https://w4x-img.onthew4x.workers.dev/api/claude', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         system: SYSTEM,
-        messages: [{ role: 'user', content: `Artist: ${artist}\nTitle: ${title}\nGenre: ${genre}\n${hint}\n\nSearch Bandcamp, Discogs, Beatport AND Resident Advisor for this track. Cross-check all sources and use the earliest confirmed original release date and label. Also search Instagram handles for artist and label. Generate photo_keywords for Unsplash matching the track mood. Return JSON only. Return JSON only.` }]
+        messages: [{ role: 'user', content: `Artist: ${artist}\nTitle: ${title}\nGenre: ${genre}\n${hint}\n\nUse your knowledge to find the original label, year, Instagram handles for artist and label. Generate photo_keywords for Unsplash matching the track mood. Return JSON only.` }]
       })
     });
 
+    clearTimeout(timeout);
     if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
     const payload = await res.json();
 
