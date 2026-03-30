@@ -1014,15 +1014,14 @@ async function importSpotifyPlaylist() {
 
   try {
     const token = await getSpotifyToken();
-    // First get playlist name
-    const resMeta = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}?fields=name`, {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-    const meta = await resMeta.json();
+    // Route via Cloudflare Worker to bypass CORS
+    const metaUrl = `https://api.spotify.com/v1/playlists/${playlistId}?fields=name`;
+    const resMeta = await fetch(PROXY + encodeURIComponent(metaUrl) + '&spotify_token=' + encodeURIComponent(token));
+    const metaText = await resMeta.text();
+    const meta = JSON.parse(metaText);
 
-    const res = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=10&fields=items(track(name,artists))`, {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
+    const tracksUrl = `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=10&fields=items(track(name,artists))`;
+    const res = await fetch(PROXY + encodeURIComponent(tracksUrl) + '&spotify_token=' + encodeURIComponent(token));
     const data = await res.json();
     
     if (!data.items || data.items.length === 0) throw new Error('Playlist vide ou inaccessible');
