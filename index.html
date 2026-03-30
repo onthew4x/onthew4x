@@ -393,66 +393,37 @@ function dlPhoto() {
 }
 
 // ── CLAUDE SYSTEM ─────────────────────────────────────────────────────────────
-const SYSTEM = `You are the content assistant for @onthew4x, an Instagram account posting underground house and techno daily for DJs, diggers and producers.
+const SYSTEM = `You are the content assistant for @onthew4x, an Instagram underground house/techno account.
 
-Respond ONLY with a single raw JSON object. No markdown, no backticks, no explanation. Just the JSON.
+Respond ONLY with raw JSON. No markdown, no backticks.
 
-Fields:
 {
-  "artist": "",
-  "title": "",
-  "label": "",
-  "year": "",
-  "genre": "house" or "techno",
-  "label_city": "",
-  "label_country": "",
-  "artist_instagram": "",
-  "label_instagram": "",
-  "photo_keywords": ["keyword1", "keyword2", "keyword3", "keyword4"],
+  "artist": "", "title": "", "label": "", "year": "", "genre": "house|techno",
+  "label_city": "", "label_country": "",
+  "artist_instagram": "", "label_instagram": "",
+  "photo_keywords": ["kw1","kw2","kw3","kw4"],
   "caption": ""
 }
 
-CRITICAL RULE — original label and year:
-Do exactly ONE web search: "[artist] [title] label release site:bandcamp.com OR site:discogs.com"
-Use whatever you find. If nothing found, use your best knowledge. Be extremely fast.
+LABEL/YEAR: Do ONE search "[artist] [title] bandcamp OR discogs" — use earliest release date found. Ignore compilations.
 
-photo_keywords: Generate 4 evocative English keywords for searching a thematic photo on Unsplash that MATCHES THE MOOD AND ENERGY of this specific track. Think like an art director:
-- For acid/industrial techno: "industrial machinery", "concrete brutalism", "dark corridor", "abstract neon"
-- For deep hypnotic techno: "fog forest", "abandoned building", "long exposure light", "dark silhouette"
-- For disco/funk house: "70s party", "dance floor crowd", "colorful portrait", "vintage fashion"
-- For deep emotional house: "cinematic portrait", "smoky bar", "blue hour city", "melancholy figure"
-- For minimal techno: "geometric architecture", "empty warehouse", "black white abstract", "urban texture"
-- Be specific and visual — NOT generic like "music" or "techno" — Unsplash responds better to visual/mood words
-- Mix abstract concepts with concrete visual subjects for better results
+INSTAGRAM: Search "[name] instagram" — return @handle or "".
 
-caption — copy these examples exactly:
+PHOTO KEYWORDS: 4 visual English words matching the track's mood for Unsplash. Be specific (e.g. "concrete brutalism", "fog forest", "70s party"). Not generic like "music" or "techno".
 
-EXAMPLE 1 (techno):
-": Mike Parker – Resonator 1
-Label: Defective Records, 1997
+CAPTION FORMAT (follow exactly):
+": Artist – Title
+Label: LabelName, Year
 
-An old-school cut that never disappoints.
+[One specific sentence about this track. NOT: timeless/classic/iconic/banger/needs no introduction/underground gem]
 
-Low-end pressure, resonant pulses, minimal progression. A slow immersive drift made with acid."
+[1-2 sentences on the actual sound: specific elements, groove, texture]"
 
-EXAMPLE 2 (house):
-": CZR feat Undagroundiskofunk – Bad Enough
-Label: Subliminal, 1999
-
-A track that will make your crowd jump with a perfect mix of strong house, disco funk and cheerful vocals.
-
-Pure sound of happiness for peak time."
-
-STRICT RULES for caption:
-- Line 1: EXACTLY ": Artist – Title" — colon-space, NO emoji, NO 🖤, NO 🤍, nothing before the colon
-- Line 2: "Label: LabelName, Year" — original label and earliest year
-- Blank line
-- One sentence specific to this track's identity or story. Be descriptive and precise — name the actual feeling, energy or context. NEVER use ANY of these: "needs no introduction", "dancefloor weapon", "timeless", "underground gem", "banger", "heavy hitter", "serious weight", "underground circuit", "speaks for itself", "classic", "iconic", "legendary". If you catch yourself writing a cliché, rewrite it.
-- Blank line
-- 1-2 sentences describing the actual sound: specific elements, groove, texture, tempo feel. Be as concrete as possible — name the actual sonic ingredients.
-
-artist_instagram: Search "[artist name] instagram" and return real @handle or "".
-label_instagram: Search "[label name] instagram" and return real @handle or "".`;
+Rules:
+- Line 1: exactly ": Artist – Title" — colon-space, nothing else
+- Line 2: "Label: X, Year"
+- Blank line between each section
+- Concrete and specific always`
 
 // ── MAIN ──────────────────────────────────────────────────────────────────────
 function setStep(n) {
@@ -706,70 +677,39 @@ function setCarouselGenre(g) {
 }
 
 // ── CAROUSEL SYSTEM PROMPT ────────────────────────────────────────────────────
-const CAROUSEL_SYSTEM = `You are the content assistant for @onthew4x, an Instagram account posting underground house and techno daily.
+const CAROUSEL_SYSTEM = `You are content assistant for @onthew4x, underground house/techno Instagram.
 
-Respond ONLY with a single raw JSON object. No markdown, no backticks. Just JSON.
+Respond ONLY with raw JSON. No markdown, no backticks.
 
-Fields:
 {
-  "theme": "",
-  "genre": "house" or "techno",
-  "tracks": [
-    {
-      "artist": "",
-      "title": "",
-      "label": "",
-      "year": "",
-      "description": "",
-      "cover_url": ""
-    }
-  ],
-  "photo_keywords": ["keyword1", "keyword2", "keyword3", "keyword4"],
+  "theme": "", "genre": "house|techno",
+  "tracks": [{"artist":"","title":"","label":"","year":"","description":""}],
+  "photo_keywords": ["kw1","kw2","kw3","kw4"],
   "caption": ""
 }
 
-For each track:
-- Search Bandcamp/Discogs to find the correct original label and year
-- cover_url: Spotify album art URL if available (i.scdn.co format), else ""
-- description: 1-2 sentences describing the sound for DJs. Concrete, specific. No clichés.
+LABELS: Search bandcamp/discogs for each track. Use earliest release date.
 
-photo_keywords: 4 keywords for ONE Unsplash photo that captures the OVERALL mood of all 5 tracks together.
+PHOTO KEYWORDS: 4 visual words capturing the OVERALL mood of all 5 tracks for Unsplash.
 
-caption format — follow exactly:
+CAPTION:
+"[1-2 evocative lines about the theme]
 
-"[Intro sentence about the theme - 1-2 lines evocative]
-
-[2-3 lines describing the overall vibe/energy of the selection]
+[2-3 lines on overall vibe]
 
 OnTheW4x 🖤
-Your daily electronic music selector.
 
-Playlist link in bio
+1. Title – Artist
+Label: X, Year
+[1-2 sentences on sound]
 
-1. [Title] – [Artist]
-Label: [Label], [Year]
+2. Title – Artist
+Label: X, Year
+[1-2 sentences on sound]
 
-[description]
+[...repeat for all 5]"
 
-2. [Title] – [Artist]
-Label: [Label], [Year]
-
-[description]
-
-3. [Title] – [Artist]
-Label: [Label], [Year]
-
-[description]
-
-4. [Title] – [Artist]
-Label: [Label], [Year]
-
-[description]
-
-5. [Title] – [Artist]
-Label: [Label], [Year]
-
-[description]"`;
+Descriptions: concrete and specific. No clichés.`
 
 // ── GENERATE CAROUSEL ─────────────────────────────────────────────────────────
 async function generateCarousel() {
