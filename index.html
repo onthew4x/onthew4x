@@ -137,7 +137,17 @@
       <span class="section-label">Thème du carousel</span>
       <input class="track-input" id="carousel-theme" type="text"
         placeholder="Top 5 hidden gems of Ben Klock"
-        autocomplete="off" spellcheck="false"/>
+        autocomplete="off" spellcheck="false" style="width:100%"/>
+    </div>
+    <div>
+      <span class="section-label">Importer depuis Spotify (optionnel)</span>
+      <div style="display:flex;gap:8px">
+        <input class="track-input" id="spotify-playlist-url" type="text"
+          placeholder="https://open.spotify.com/playlist/..."
+          autocomplete="off" spellcheck="false" style="flex:1"/>
+        <button class="btn-go" id="btn-import-playlist" onclick="importSpotifyPlaylist()" style="white-space:nowrap">Importer</button>
+      </div>
+      <div class="hint" style="margin-top:4px">Colle un lien playlist Spotify → remplit les 5 tracks automatiquement</div>
     </div>
     <div>
       <span class="section-label">Genre</span>
@@ -692,6 +702,12 @@ LABELS: Search bandcamp/discogs for each track. Use earliest release date.
 
 PHOTO KEYWORDS: 4 visual words capturing the OVERALL mood of all 5 tracks for Unsplash.
 
+Also find for each track:
+- artist_instagram: search "[artist] instagram" → @handle or ""
+- label_instagram: search "[label] instagram" → @handle or ""
+
+Add these fields to each track object.
+
 CAPTION:
 "[1-2 evocative lines about the theme]
 
@@ -982,6 +998,50 @@ function copyCarouselCaption() {
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 1800);
   });
+}
+
+async function importSpotifyPlaylist() {
+  const url = document.getElementById('spotify-playlist-url').value.trim();
+  if (!url) return;
+  
+  const match = url.match(/playlist\/([a-zA-Z0-9]+)/);
+  if (!match) { alert('URL Spotify invalide — ex: https://open.spotify.com/playlist/xxx'); return; }
+  
+  const playlistId = match[1];
+  const btn = document.getElementById('btn-import-playlist');
+  btn.textContent = '...';
+  btn.disabled = true;
+
+  try {
+    const token = await getSpotifyToken();
+    const res = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=5`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+    
+    if (!data.items || data.items.length === 0) throw new Error('Playlist vide ou inaccessible');
+    
+    const tracks = data.items.slice(0, 5);
+    tracks.forEach((item, i) => {
+      const t = item.track;
+      if (t) {
+        const artist = t.artists[0]?.name || '';
+        const title = t.name || '';
+        document.getElementById('ct' + (i+1)).value = `${artist} - ${title}`;
+      }
+    });
+
+    // Auto-fill theme if empty
+    const themeEl = document.getElementById('carousel-theme');
+    if (!themeEl.value && data.name) themeEl.value = data.name;
+
+    btn.textContent = '✓ Importé';
+    setTimeout(() => { btn.textContent = 'Importer'; btn.disabled = false; }, 2000);
+  } catch(err) {
+    alert('Erreur : ' + err.message);
+    btn.textContent = 'Importer';
+    btn.disabled = false;
+  }
 }
 
 function resetCarousel() {
