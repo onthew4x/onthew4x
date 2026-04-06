@@ -140,14 +140,20 @@
         autocomplete="off" spellcheck="false" style="width:100%"/>
     </div>
     <div>
-      <span class="section-label">Importer depuis Spotify (optionnel)</span>
-      <div style="display:flex;gap:8px">
-        <input class="track-input" id="spotify-playlist-url" type="text"
-          placeholder="https://open.spotify.com/playlist/..."
-          autocomplete="off" spellcheck="false" style="flex:1"/>
-        <button class="btn-go" id="btn-import-playlist" onclick="importSpotifyPlaylist()" style="white-space:nowrap">Importer</button>
+      <span class="section-label">Screenshot Spotify (optionnel)</span>
+      <div style="background:var(--surface2);border:1px dashed var(--border2);border-radius:10px;padding:14px;text-align:center;cursor:pointer;position:relative" onclick="document.getElementById('spotify-screenshot').click()">
+        <input type="file" id="spotify-screenshot" accept="image/*" style="display:none" onchange="importFromScreenshot(this.files[0])">
+        <div id="screenshot-preview" style="display:none;margin-bottom:8px">
+          <img id="screenshot-img" style="max-height:120px;border-radius:6px;max-width:100%">
+        </div>
+        <div id="screenshot-placeholder" style="color:var(--muted);font-family:var(--mono);font-size:11px">
+          📷 Glissez ou cliquez pour uploader un screenshot Spotify<br>
+          <span style="font-size:10px;color:var(--muted2)">Les tracks seront détectées automatiquement</span>
+        </div>
+        <div id="screenshot-loading" style="display:none;color:var(--muted2);font-family:var(--mono);font-size:11px">
+          Analyse en cours...
+        </div>
       </div>
-      <div class="hint" style="margin-top:4px">Colle un lien playlist Spotify → remplit les 5 tracks automatiquement</div>
     </div>
     <div>
       <span class="section-label">Genre</span>
@@ -1000,53 +1006,78 @@ function copyCarouselCaption() {
   });
 }
 
-async function importSpotifyPlaylist() {
-  const url = document.getElementById('spotify-playlist-url').value.trim();
-  if (!url) return;
-  
-  const match = url.match(/playlist\/([a-zA-Z0-9]+)/);
-  if (!match) { alert('URL Spotify invalide — ex: https://open.spotify.com/playlist/xxx'); return; }
-  
-  const playlistId = match[1];
-  const btn = document.getElementById('btn-import-playlist');
-  btn.textContent = '...';
-  btn.disabled = true;
+async function importFromScreenshot(file) {
+  if (!file) return;
+
+  // Show preview
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('screenshot-img').src = e.target.result;
+    document.getElementById('screenshot-preview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+
+  document.getElementById('screenshot-placeholder').style.display = 'none';
+  document.getElementById('screenshot-loading').style.display = 'block';
 
   try {
-    const token = await getSpotifyToken();
-    // Route via Cloudflare Worker to bypass CORS
-    const metaUrl = `https://api.spotify.com/v1/playlists/${playlistId}?fields=name`;
-    const resMeta = await fetch(PROXY + encodeURIComponent(metaUrl) + '&spotify_token=' + encodeURIComponent(token));
-    const metaText = await resMeta.text();
-    const meta = JSON.parse(metaText);
-
-    const tracksUrl = `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=10&fields=items(track(name,artists))`;
-    const res = await fetch(PROXY + encodeURIComponent(tracksUrl) + '&spotify_token=' + encodeURIComponent(token));
-    const data = await res.json();
-    
-    if (!data.items || data.items.length === 0) throw new Error('Playlist vide ou inaccessible');
-    
-    // Filter out null tracks (local files, deleted tracks)
-    const validTracks = data.items.filter(item => item.track && item.track.name && item.track.artists?.length > 0).slice(0, 5);
-    if (validTracks.length === 0) throw new Error('Aucune track valide dans la playlist');
-
-    validTracks.forEach((item, i) => {
-      const t = item.track;
-      const artist = t.artists[0]?.name || '';
-      const title = t.name || '';
-      document.getElementById('ct' + (i+1)).value = `${artist} - ${title}`;
+    // Convert to base64
+    const base64 = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result.split(',')[1]);
+      r.onerror = reject;
+      r.readAsDataURL(file);
     });
 
-    // Auto-fill theme if empty
-    const themeEl = document.getElementById('carousel-theme');
-    if (!themeEl.value && meta.name) themeEl.value = meta.name;
+    const mediaType = file.type || 'image/jpeg';
 
-    btn.textContent = '✓ Importé';
-    setTimeout(() => { btn.textContent = 'Importer'; btn.disabled = false; }, 2000);
+    // Send to Claude Vision via Worker
+    const res = await fetch('https://w4x-img.onthew4x.workers.dev/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 500,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType, data: base64 }
+            },
+            {
+              type: 'text',
+              text: 'This is a Spotify screenshot. Extract all track names and artist names visible. Return ONLY a JSON array of up to 5 tracks: [{"artist": "...", "title": "..."}, ...]. No markdown, no explanation, just the JSON array.'
+            }
+          ]
+        }]
+      })
+    });
+
+    const payload = await res.json();
+    const textBlock = payload.content?.find(b => b.type === 'text');
+    if (!textBlock?.text) throw new Error('Pas de réponse');
+
+    let txt = textBlock.text.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
+    const s = txt.indexOf('['), e = txt.lastIndexOf(']');
+    const tracks = JSON.parse(txt.slice(s, e+1));
+
+    tracks.slice(0, 5).forEach((t, i) => {
+      if (t.artist && t.title) {
+        document.getElementById('ct' + (i+1)).value = t.artist + ' - ' + t.title;
+      }
+    });
+
+    document.getElementById('screenshot-loading').style.display = 'none';
+    document.getElementById('screenshot-placeholder').style.display = 'block';
+    document.getElementById('screenshot-placeholder').textContent = '✓ ' + tracks.length + ' track(s) détectée(s)';
+    document.getElementById('screenshot-placeholder').style.color = '#5a9';
+
   } catch(err) {
-    alert('Erreur : ' + err.message);
-    btn.textContent = 'Importer';
-    btn.disabled = false;
+    document.getElementById('screenshot-loading').style.display = 'none';
+    document.getElementById('screenshot-placeholder').style.display = 'block';
+    document.getElementById('screenshot-placeholder').textContent = 'Erreur : ' + err.message;
+    document.getElementById('screenshot-placeholder').style.color = '#e88';
   }
 }
 
