@@ -120,6 +120,10 @@
   <!-- SINGLE TRACK INPUT -->
   <div id="single-input">
     <span class="section-label">Track</span>
+    <div style="background:var(--surface2);border:1px dashed var(--border2);border-radius:10px;padding:12px;text-align:center;cursor:pointer;margin-bottom:8px" onclick="document.getElementById('single-screenshot').click()">
+      <input type="file" id="single-screenshot" accept="image/*" style="display:none" onchange="importSingleFromScreenshot(this.files[0])">
+      <div id="single-screenshot-status" style="color:var(--muted);font-family:var(--mono);font-size:10px">📷 Screenshot Spotify → remplit automatiquement</div>
+    </div>
     <div class="input-row">
       <input class="track-input" id="track-input" type="text"
         placeholder="Jeff Mills - The Bells (Techno)"
@@ -129,6 +133,12 @@
     </div>
     <div class="hint">Format : Artiste - Titre (House) ou (Techno) — toujours à la fin</div>
     <div class="parsed-preview" id="parsed-preview"></div>
+    <div style="margin-top:10px;background:var(--surface2);border:1px dashed var(--border2);border-radius:10px;padding:12px;text-align:center;cursor:pointer" onclick="document.getElementById('single-screenshot').click()">
+      <input type="file" id="single-screenshot" accept="image/*" style="display:none" onchange="importSingleFromScreenshot(this.files[0])">
+      <div id="single-screenshot-status" style="color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:.05em">
+        📷 Screenshot Spotify → remplit artiste + titre automatiquement
+      </div>
+    </div>
   </div>
 
   <!-- CAROUSEL INPUT -->
@@ -171,6 +181,14 @@
         <div class="track-line"><span class="track-num">4.</span><input class="track-input" placeholder="Artiste - Titre" id="ct4" autocomplete="off" spellcheck="false"></div>
         <div class="track-line"><span class="track-num">5.</span><input class="track-input" placeholder="Artiste - Titre" id="ct5" autocomplete="off" spellcheck="false"></div>
       </div>
+      <div id="extra-tracks" style="display:none;flex-direction:column;gap:8px;margin-top:8px">
+        <div class="track-line"><span class="track-num">6.</span><input class="track-input" placeholder="Artiste - Titre (optionnel)" id="ct6" autocomplete="off" spellcheck="false"></div>
+        <div class="track-line"><span class="track-num">7.</span><input class="track-input" placeholder="Artiste - Titre (optionnel)" id="ct7" autocomplete="off" spellcheck="false"></div>
+        <div class="track-line"><span class="track-num">8.</span><input class="track-input" placeholder="Artiste - Titre (optionnel)" id="ct8" autocomplete="off" spellcheck="false"></div>
+        <div class="track-line"><span class="track-num">9.</span><input class="track-input" placeholder="Artiste - Titre (optionnel)" id="ct9" autocomplete="off" spellcheck="false"></div>
+        <div class="track-line"><span class="track-num">10.</span><input class="track-input" placeholder="Artiste - Titre (optionnel)" id="ct10" autocomplete="off" spellcheck="false"></div>
+      </div>
+      <button class="btn-more" id="btn-more-tracks" onclick="toggleExtraTracks()" style="margin-top:8px;width:100%">+ Ajouter jusqu'à 10 tracks</button>
       <div class="hint" style="margin-top:8px">Format : Artiste - Titre (sans genre)</div>
     </div>
     <button class="btn-go" id="btn-go-carousel" onclick="generateCarousel()" style="width:100%">Générer le carousel</button>
@@ -736,7 +754,7 @@ Descriptions: concrete and specific. No clichés.`
 // ── GENERATE CAROUSEL ─────────────────────────────────────────────────────────
 async function generateCarousel() {
   const theme = document.getElementById('carousel-theme').value.trim();
-  const tracks = [1,2,3,4,5].map(i => document.getElementById('ct'+i).value.trim()).filter(t => t);
+  const tracks = [1,2,3,4,5,6,7,8,9,10].map(i => { const el = document.getElementById('ct'+i); return el ? el.value.trim() : ''; }).filter(t => t);
   
   if (!theme || tracks.length < 2) {
     alert('Entrez le thème et au moins 2 tracks');
@@ -1006,6 +1024,69 @@ function copyCarouselCaption() {
   });
 }
 
+function toggleExtraTracks() {
+  const extra = document.getElementById('extra-tracks');
+  const btn = document.getElementById('btn-more-tracks');
+  if (extra.style.display === 'none') {
+    extra.style.display = 'flex';
+    btn.textContent = '− Masquer les tracks 6-10';
+  } else {
+    extra.style.display = 'none';
+    btn.textContent = "+ Ajouter jusqu'à 10 tracks";
+  }
+}
+
+async function importSingleFromScreenshot(file) {
+  if (!file) return;
+  const status = document.getElementById('single-screenshot-status');
+  status.textContent = 'Analyse en cours...';
+  status.style.color = 'var(--muted2)';
+
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result.split(',')[1]);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+
+    const res = await fetch('https://w4x-img.onthew4x.workers.dev/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 200,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: file.type || 'image/jpeg', data: base64 } },
+            { type: 'text', text: 'This is a Spotify screenshot. Extract the main track artist and title. Return ONLY JSON: {"artist": "...", "title": "..."}. No markdown.' }
+          ]
+        }]
+      })
+    });
+
+    const payload = await res.json();
+    const textBlock = payload.content?.find(b => b.type === 'text');
+    const txt = textBlock?.text?.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
+    const s = txt.indexOf('{'), e = txt.lastIndexOf('}');
+    const track = JSON.parse(txt.slice(s, e+1));
+
+    if (track.artist && track.title) {
+      const input = document.getElementById('track-input');
+      // Try to detect genre from existing value or leave for user
+      const currentGenre = input.value.match(/\((house|techno)\)/i)?.[1] || '';
+      input.value = track.artist + ' - ' + track.title + (currentGenre ? ' (' + currentGenre + ')' : ' (Techno)');
+      previewParse(input.value);
+      status.textContent = '✓ ' + track.artist + ' — ' + track.title;
+      status.style.color = '#5a9';
+    }
+  } catch(err) {
+    status.textContent = 'Erreur : ' + err.message;
+    status.style.color = '#e88';
+  }
+}
+
 async function importFromScreenshot(file) {
   if (!file) return;
 
@@ -1081,10 +1162,63 @@ async function importFromScreenshot(file) {
   }
 }
 
+async function importSingleFromScreenshot(file) {
+  if (!file) return;
+  const status = document.getElementById('single-screenshot-status');
+  status.textContent = 'Analyse en cours...';
+  status.style.color = 'var(--muted2)';
+
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result.split(',')[1]);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+
+    const res = await fetch('https://w4x-img.onthew4x.workers.dev/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 200,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: file.type || 'image/jpeg', data: base64 } },
+            { type: 'text', text: 'This is a Spotify screenshot of one track. Extract the artist name and track title. Return ONLY a JSON object: {"artist": "...", "title": "..."}. No markdown, just JSON.' }
+          ]
+        }]
+      })
+    });
+
+    const payload = await res.json();
+    const textBlock = payload.content?.find(b => b.type === 'text');
+    if (!textBlock?.text) throw new Error('Pas de réponse');
+
+    let txt = textBlock.text.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
+    const s = txt.indexOf('{'), e = txt.lastIndexOf('}');
+    const track = JSON.parse(txt.slice(s, e+1));
+
+    if (track.artist && track.title) {
+      const input = document.getElementById('track-input');
+      input.value = track.artist + ' - ' + track.title;
+      previewParse(input.value);
+      status.textContent = '✓ ' + track.artist + ' – ' + track.title;
+      status.style.color = '#5a9';
+    }
+  } catch(err) {
+    status.textContent = 'Erreur : ' + err.message;
+    status.style.color = '#e88';
+  }
+}
+
 function resetCarousel() {
   document.getElementById('carousel-result').style.display = 'none';
   document.getElementById('carousel-theme').value = '';
-  [1,2,3,4,5].forEach(i => document.getElementById('ct'+i).value = '');
+  [1,2,3,4,5,6,7,8,9,10].forEach(i => { const el = document.getElementById('ct'+i); if(el) el.value = ''; });
+  document.getElementById('extra-tracks').style.display = 'none';
+  document.getElementById('btn-more-tracks').textContent = "+ Ajouter jusqu\'à 10 tracks";
   document.getElementById('btn-go-carousel').disabled = false;
   carouselCanvases = []; slideTitreUrl = null;
 }
