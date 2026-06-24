@@ -307,7 +307,7 @@ async function readScreenshot(file, mode) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-4-5',
         max_tokens: 500,
         messages: [{
           role: 'user',
@@ -459,8 +459,8 @@ async function generate() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 800,
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1500,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         system: SYSTEM,
         messages: [{ role: 'user', content: `Artist: ${artist}\nTitle: ${title}\nGenre: ${genre}\n${hint}\n\nFind label, year, Instagram handles. Write caption. Return JSON only.` }]
@@ -474,7 +474,12 @@ async function generate() {
 
     let txt = textBlock.text.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
     const s = txt.indexOf('{'), e2 = txt.lastIndexOf('}');
-    singleData = JSON.parse(txt.slice(s, e2 + 1));
+    if (s < 0 || e2 < 0) throw new Error('Réponse JSON invalide — réessayez');
+    try {
+      singleData = JSON.parse(txt.slice(s, e2 + 1));
+    } catch(parseErr) {
+      throw new Error('JSON incomplet — réessayez');
+    }
     singleData.genre = genre;
 
     // Fix caption first line
@@ -635,7 +640,7 @@ async function generateCarousel() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-4-5',
         max_tokens: 1500,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         system: CAROUSEL_SYSTEM,
