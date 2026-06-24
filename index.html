@@ -5,100 +5,85 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OnTheW4x — Post Generator</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap');
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  :root{--bg:#080808;--surface:#111;--surface2:#1a1a1a;--border:#222;--border2:#333;--white:#f0ede8;--muted:#555;--muted2:#888;--mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif}
-  html,body{background:var(--bg);color:var(--white);font-family:var(--sans);min-height:100vh}
-  body{display:flex;flex-direction:column;align-items:center;padding:48px 16px 80px}
-  .header{text-align:center;margin-bottom:40px}
-  .brand{font-family:var(--mono);font-size:10px;letter-spacing:.3em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
-  h1{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--white)}
-  .tagline{font-size:13px;color:var(--muted2);margin-top:6px;font-weight:300}
-  .card{width:100%;max-width:580px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:20px}
-  .section-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:8px}
-  .input-row{display:flex;gap:8px}
-  .track-input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:13px;color:var(--white);outline:none;transition:border-color .15s}
-  .track-input::placeholder{color:var(--muted);font-style:italic}
-  .track-input:focus{border-color:var(--muted2)}
-  .btn-go{background:var(--white);color:var(--bg);border:none;border-radius:10px;padding:14px 20px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:opacity .15s;white-space:nowrap}
-  .btn-go:hover{opacity:.85}
-  .btn-go:disabled{opacity:.3;cursor:not-allowed}
-  .hint{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:6px}
-  .parsed-preview{font-size:11px;color:var(--muted2);font-family:var(--mono);margin-top:6px;min-height:16px;transition:color .2s}
-  .parsed-preview.ok{color:#5a9}
-  .loader{display:none;flex-direction:column;gap:8px;padding:4px 0}
-  .loader.visible{display:flex}
-  .step{font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px;transition:color .3s}
-  .step.active{color:var(--white)}
-  .step.done{color:var(--muted2)}
-  .dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
-  .step.active .dot{background:var(--white);animation:pulse .8s ease-in-out infinite}
-  .step.done .dot{background:var(--muted2);animation:none}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-  .error-box{display:none;background:#1a0a0a;border:1px solid #3a1515;border-radius:10px;padding:14px 16px;font-size:12px;color:#e88;font-family:var(--mono);line-height:1.6}
-  .error-box.visible{display:block}
-  .result{display:none;flex-direction:column;gap:20px}
-  .result.visible{display:flex}
-  .track-bar{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
-  .track-bar-artist{font-family:var(--mono);font-size:12px;color:var(--white);font-weight:700}
-  .track-bar-meta{font-size:11px;color:var(--muted2);margin-top:2px}
-  .genre-pill{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:20px;flex-shrink:0}
-  .genre-pill.house{background:#f0ede8;color:#080808}
-  .genre-pill.techno{background:#1a1a1a;color:#f0ede8;border:1px solid #333}
-  .visual-row{display:flex;gap:14px;align-items:flex-start}
-  .visual-box{flex:1;display:flex;flex-direction:column;gap:8px}
-  .visual-label{font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase}
-  .visual-box canvas,.visual-box img{width:100%;border-radius:8px;display:block}
-  .cover-img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block;background:var(--surface2)}
-
-  /* PHOTO PICKER */
-  .photo-section{}
-  .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
-  .photo-thumb{aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;border:2.5px solid transparent;transition:border-color .15s;position:relative}
-  .photo-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-  .photo-thumb:hover{border-color:var(--muted2)}
-  .photo-thumb.selected{border-color:var(--white)}
-  .photo-thumb.selected::after{content:'✓';position:absolute;top:6px;right:6px;background:var(--white);color:var(--bg);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
-  .photo-actions{display:flex;gap:8px;margin-top:8px}
-  .btn-more{flex:1;background:transparent;color:var(--muted2);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:color .15s}
-  .btn-more:hover{color:var(--white)}
-  .btn-dl-photo{flex:1;background:var(--surface2);color:var(--white);border:1px solid var(--border2);border-radius:8px;padding:10px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:border-color .15s}
-  .btn-dl-photo:hover{border-color:var(--muted2)}
-  .btn-dl-photo:disabled{opacity:.3;cursor:not-allowed}
-  .kw-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
-  .kw-pill{font-family:var(--mono);font-size:10px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;color:var(--muted2)}
-
-  .caption-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
-  .caption-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:13px;line-height:1.8;color:var(--white);white-space:pre-wrap;min-height:80px}
-  .meta-row{display:flex;gap:10px;flex-wrap:wrap}
-  .meta-chip{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted2);display:flex;gap:6px;align-items:center}
-  .meta-chip span{color:var(--white)}
-  .actions{display:flex;gap:10px}
-  .btn-dl{flex:1;background:var(--white);color:var(--bg);border:none;border-radius:10px;padding:14px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:opacity .15s}
-  .btn-dl:hover{opacity:.85}
-  .btn-copy{flex:1;background:transparent;color:var(--white);border:1px solid var(--border2);border-radius:10px;padding:14px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:border-color .15s}
-  .btn-copy:hover{border-color:var(--muted2)}
-  .btn-reset{background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:11px;cursor:pointer}
-  .btn-reset:hover{color:var(--white)}
-  .manual-upload{background:#111a0a;border:1px solid #2a3a1a;border-radius:10px;padding:14px 16px}
-  .mu-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:#888;text-transform:uppercase;margin-bottom:8px}
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--white);color:var(--bg);padding:10px 20px;border-radius:8px;font-family:var(--mono);font-size:12px;font-weight:700;transition:transform .25s ease;pointer-events:none;z-index:100}
-  .toast.show{transform:translateX(-50%) translateY(0)}
-
-  .mode-toggle{display:flex;gap:0;margin-bottom:0;border-radius:10px;overflow:hidden;border:1px solid var(--border2)}
-  .mode-btn{flex:1;padding:12px;background:transparent;color:var(--muted);border:none;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .15s}
-  .mode-btn.active{background:var(--white);color:var(--bg)}
-  .carousel-tracks{display:flex;flex-direction:column;gap:8px}
-  .track-line{display:flex;gap:8px;align-items:center}
-  .track-num{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:16px}
-  .carousel-covers{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-  .cover-circle{aspect-ratio:1;border-radius:50%;overflow:hidden;width:100%}
-  .cover-circle canvas{width:100%;height:100%;display:block}
-  .cover-dl-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
-  .btn-dl-small{background:var(--surface2);color:var(--white);border:1px solid var(--border2);border-radius:6px;padding:6px 10px;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:border-color .15s}
-  .btn-dl-small:hover{border-color:var(--muted2)}
-  .slide-titre-preview{width:100%;aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;position:relative}
-  .slide-titre-canvas{width:100%;border-radius:8px;display:block}
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#080808;--surface:#111;--surface2:#1a1a1a;--border:#222;--border2:#333;--white:#f0ede8;--muted:#555;--muted2:#888;--mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif}
+html,body{background:var(--bg);color:var(--white);font-family:var(--sans);min-height:100vh}
+body{display:flex;flex-direction:column;align-items:center;padding:48px 16px 80px}
+.header{text-align:center;margin-bottom:40px}
+.brand{font-family:var(--mono);font-size:10px;letter-spacing:.3em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+h1{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--white)}
+.tagline{font-size:13px;color:var(--muted2);margin-top:6px;font-weight:300}
+.card{width:100%;max-width:600px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:20px}
+.section-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:8px}
+.mode-toggle{display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid var(--border2)}
+.mode-btn{flex:1;padding:12px;background:transparent;color:var(--muted);border:none;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .15s}
+.mode-btn.active{background:var(--white);color:var(--bg)}
+.input-row{display:flex;gap:8px}
+.track-input{flex:1;width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:13px;color:var(--white);outline:none;transition:border-color .15s}
+.track-input::placeholder{color:var(--muted);font-style:italic}
+.track-input:focus{border-color:var(--muted2)}
+.btn-go{background:var(--white);color:var(--bg);border:none;border-radius:10px;padding:14px 20px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:opacity .15s;white-space:nowrap}
+.btn-go:hover{opacity:.85}
+.btn-go:disabled{opacity:.3;cursor:not-allowed}
+.hint{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:6px}
+.parsed-preview{font-size:11px;color:var(--muted2);font-family:var(--mono);margin-top:6px;min-height:16px}
+.parsed-preview.ok{color:#5a9}
+.screenshot-zone{background:var(--surface2);border:1px dashed var(--border2);border-radius:10px;padding:16px;text-align:center;cursor:pointer;transition:border-color .15s}
+.screenshot-zone:hover{border-color:var(--muted2)}
+.screenshot-zone-text{color:var(--muted);font-family:var(--mono);font-size:11px;line-height:1.6}
+.screenshot-zone-text.success{color:#5a9}
+.screenshot-zone-text.error{color:#e88}
+.loader{display:none;flex-direction:column;gap:8px;padding:4px 0}
+.loader.visible{display:flex}
+.step{font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px;transition:color .3s}
+.step.active{color:var(--white)}
+.step.done{color:var(--muted2)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
+.step.active .dot{background:var(--white);animation:pulse .8s ease-in-out infinite}
+.step.done .dot{background:var(--muted2);animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.error-box{display:none;background:#1a0a0a;border:1px solid #3a1515;border-radius:10px;padding:14px 16px;font-size:12px;color:#e88;font-family:var(--mono);line-height:1.6}
+.error-box.visible{display:block}
+.result{display:none;flex-direction:column;gap:20px}
+.result.visible{display:flex}
+.track-bar{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.track-bar-artist{font-family:var(--mono);font-size:12px;color:var(--white);font-weight:700}
+.track-bar-meta{font-size:11px;color:var(--muted2);margin-top:2px}
+.genre-pill{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:20px;flex-shrink:0}
+.genre-pill.house{background:#f0ede8;color:#080808}
+.genre-pill.techno{background:#1a1a1a;color:#f0ede8;border:1px solid #333}
+.visual-row{display:flex;gap:14px;align-items:flex-start}
+.visual-box{flex:1;display:flex;flex-direction:column;gap:8px}
+.visual-label{font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase}
+.cover-img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block;background:var(--surface2)}
+.caption-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+.caption-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:13px;line-height:1.8;color:var(--white);white-space:pre-wrap;min-height:80px}
+.meta-row{display:flex;gap:10px;flex-wrap:wrap}
+.meta-chip{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted2);display:flex;gap:6px;align-items:center}
+.meta-chip span{color:var(--white)}
+.actions{display:flex;gap:10px}
+.btn-dl{flex:1;background:var(--white);color:var(--bg);border:none;border-radius:10px;padding:14px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:opacity .15s}
+.btn-dl:hover{opacity:.85}
+.btn-copy{flex:1;background:transparent;color:var(--white);border:1px solid var(--border2);border-radius:10px;padding:14px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:border-color .15s}
+.btn-copy:hover{border-color:var(--muted2)}
+.btn-reset{background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:11px;cursor:pointer}
+.btn-reset:hover{color:var(--white)}
+.manual-upload{background:#111a0a;border:1px solid #2a3a1a;border-radius:10px;padding:14px 16px}
+.mu-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:#888;text-transform:uppercase;margin-bottom:8px}
+/* CAROUSEL */
+.carousel-tracks{display:flex;flex-direction:column;gap:6px}
+.track-line{display:flex;gap:8px;align-items:center}
+.track-num{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:20px;text-align:right;flex-shrink:0}
+.carousel-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.carousel-item{display:flex;flex-direction:column;gap:6px;align-items:center}
+.carousel-circle{width:100%;aspect-ratio:1;border-radius:50%;overflow:hidden;background:var(--surface2)}
+.carousel-circle canvas{width:100%;height:100%;display:block}
+.carousel-item-label{font-family:var(--mono);font-size:8px;color:var(--muted2);text-align:center;line-height:1.3;word-break:break-word}
+.btn-dl-small{background:var(--surface2);color:var(--white);border:1px solid var(--border2);border-radius:6px;padding:5px 8px;font-family:var(--mono);font-size:9px;cursor:pointer;width:100%}
+.carousel-list-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:13px;line-height:2;color:var(--white);white-space:pre-wrap}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--white);color:var(--bg);padding:10px 20px;border-radius:8px;font-family:var(--mono);font-size:12px;font-weight:700;transition:transform .25s ease;pointer-events:none;z-index:100}
+.toast.show{transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
@@ -106,7 +91,7 @@
 <header class="header">
   <div class="brand">onthew4x</div>
   <h1>Post Generator</h1>
-  <p class="tagline">Tapez la track — visuel + photo + caption générés automatiquement</p>
+  <p class="tagline">Cover circulaire + caption générés automatiquement</p>
 </header>
 
 <div class="card">
@@ -114,57 +99,94 @@
   <!-- MODE TOGGLE -->
   <div class="mode-toggle">
     <button class="mode-btn active" id="btn-mode-single" onclick="setMode('single')">1 Track</button>
-    <button class="mode-btn" id="btn-mode-carousel" onclick="setMode('carousel')">Carousel × 5</button>
+    <button class="mode-btn" id="btn-mode-carousel" onclick="setMode('carousel')">Carousel</button>
   </div>
 
-  <!-- SINGLE TRACK INPUT -->
-  <div id="single-input">
-    <span class="section-label">Track</span>
-    <div style="background:var(--surface2);border:1px dashed var(--border2);border-radius:10px;padding:12px;text-align:center;cursor:pointer;margin-bottom:8px" onclick="document.getElementById('single-screenshot').click()">
-      <input type="file" id="single-screenshot" accept="image/*" style="display:none" onchange="importSingleFromScreenshot(this.files[0])">
-      <div id="single-screenshot-status" style="color:var(--muted);font-family:var(--mono);font-size:10px">📷 Screenshot Spotify → remplit automatiquement</div>
-    </div>
-    <div class="input-row">
-      <input class="track-input" id="track-input" type="text"
-        placeholder="Jeff Mills - The Bells (Techno)"
-        autocomplete="off" spellcheck="false"
-        oninput="previewParse(this.value)"/>
-      <button class="btn-go" id="btn-go" onclick="generate()">Générer</button>
-    </div>
-    <div class="hint">Format : Artiste - Titre (House) ou (Techno) — toujours à la fin</div>
-    <div class="parsed-preview" id="parsed-preview"></div>
-    <div style="margin-top:10px;background:var(--surface2);border:1px dashed var(--border2);border-radius:10px;padding:12px;text-align:center;cursor:pointer" onclick="document.getElementById('single-screenshot').click()">
-      <input type="file" id="single-screenshot" accept="image/*" style="display:none" onchange="importSingleFromScreenshot(this.files[0])">
-      <div id="single-screenshot-status" style="color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:.05em">
-        📷 Screenshot Spotify → remplit artiste + titre automatiquement
+  <!-- ═══ SINGLE TRACK ═══ -->
+  <div id="single-section">
+
+    <!-- Screenshot import -->
+    <div style="margin-bottom:16px">
+      <span class="section-label">Screenshot Spotify (optionnel)</span>
+      <div class="screenshot-zone" onclick="document.getElementById('ss-single').click()">
+        <input type="file" id="ss-single" accept="image/*" style="display:none" onchange="readScreenshot(this.files[0],'single')">
+        <div class="screenshot-zone-text" id="ss-single-text">📷 Upload screenshot Spotify → remplit artiste & titre automatiquement</div>
       </div>
     </div>
+
+    <!-- Manual input -->
+    <div>
+      <span class="section-label">Track</span>
+      <div class="input-row">
+        <input class="track-input" id="track-input" type="text"
+          placeholder="Jeff Mills - The Bells"
+          autocomplete="off" spellcheck="false"
+          oninput="previewParse(this.value)"/>
+        <button class="btn-go" id="btn-go" onclick="generate()">Générer</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="mode-btn active" id="s-house" onclick="setSingleGenre('house')" style="border-radius:8px;border:1px solid var(--border2);flex:1">House</button>
+        <button class="mode-btn" id="s-techno" onclick="setSingleGenre('techno')" style="border-radius:8px;border:1px solid var(--border2);flex:1">Techno</button>
+      </div>
+      <div class="parsed-preview" id="parsed-preview"></div>
+    </div>
+
+    <!-- Loader -->
+    <div class="loader" id="loader-single">
+      <div class="step" id="s1"><div class="dot"></div>Recherche cover Spotify...</div>
+      <div class="step" id="s2"><div class="dot"></div>Recherche label, année, description...</div>
+      <div class="step" id="s3"><div class="dot"></div>Génération caption + circle crop...</div>
+    </div>
+
+    <div class="error-box" id="err-single"></div>
+
+    <!-- Result -->
+    <div class="result" id="result-single">
+      <div class="track-bar">
+        <div>
+          <div class="track-bar-artist" id="r-artist"></div>
+          <div class="track-bar-meta" id="r-meta"></div>
+        </div>
+        <div class="genre-pill" id="r-pill"></div>
+      </div>
+      <div class="visual-row">
+        <div class="visual-box">
+          <div class="visual-label">Cover originale</div>
+          <img class="cover-img" id="cover-img" src="" alt="cover">
+        </div>
+        <div class="visual-box">
+          <div class="visual-label">Visuel Instagram</div>
+          <canvas id="canvas"></canvas>
+        </div>
+      </div>
+      <div id="manual-zone"></div>
+      <div>
+        <div class="caption-label">Caption</div>
+        <div class="caption-box" id="caption"></div>
+      </div>
+      <div class="meta-row" id="meta"></div>
+      <div class="actions">
+        <button class="btn-dl" onclick="dlImage()">↓ Cover 1080×1080</button>
+        <button class="btn-copy" onclick="copyCaption('caption')">Copier caption</button>
+        <button class="btn-reset" onclick="resetSingle()">↺ Nouveau</button>
+      </div>
+    </div>
+
   </div>
 
-  <!-- CAROUSEL INPUT -->
-  <div id="carousel-input" style="display:none;flex-direction:column;gap:16px">
-    <div>
-      <span class="section-label">Thème du carousel</span>
-      <input class="track-input" id="carousel-theme" type="text"
-        placeholder="Top 5 hidden gems of Ben Klock"
-        autocomplete="off" spellcheck="false" style="width:100%"/>
-    </div>
+  <!-- ═══ CAROUSEL ═══ -->
+  <div id="carousel-section" style="display:none;flex-direction:column;gap:20px">
+
+    <!-- Screenshot import -->
     <div>
       <span class="section-label">Screenshot Spotify (optionnel)</span>
-      <div style="background:var(--surface2);border:1px dashed var(--border2);border-radius:10px;padding:14px;text-align:center;cursor:pointer;position:relative" onclick="document.getElementById('spotify-screenshot').click()">
-        <input type="file" id="spotify-screenshot" accept="image/*" style="display:none" onchange="importFromScreenshot(this.files[0])">
-        <div id="screenshot-preview" style="display:none;margin-bottom:8px">
-          <img id="screenshot-img" style="max-height:120px;border-radius:6px;max-width:100%">
-        </div>
-        <div id="screenshot-placeholder" style="color:var(--muted);font-family:var(--mono);font-size:11px">
-          📷 Glissez ou cliquez pour uploader un screenshot Spotify<br>
-          <span style="font-size:10px;color:var(--muted2)">Les tracks seront détectées automatiquement</span>
-        </div>
-        <div id="screenshot-loading" style="display:none;color:var(--muted2);font-family:var(--mono);font-size:11px">
-          Analyse en cours...
-        </div>
+      <div class="screenshot-zone" onclick="document.getElementById('ss-carousel').click()">
+        <input type="file" id="ss-carousel" accept="image/*" style="display:none" onchange="readScreenshot(this.files[0],'carousel')">
+        <div class="screenshot-zone-text" id="ss-carousel-text">📷 Upload screenshot playlist Spotify → remplit les tracks automatiquement</div>
       </div>
     </div>
+
+    <!-- Genre -->
     <div>
       <span class="section-label">Genre</span>
       <div style="display:flex;gap:8px">
@@ -172,142 +194,166 @@
         <button class="mode-btn" id="c-techno" onclick="setCarouselGenre('techno')" style="border-radius:8px;border:1px solid var(--border2);flex:1">Techno</button>
       </div>
     </div>
+
+    <!-- 10 track inputs -->
     <div>
-      <span class="section-label">5 Tracks</span>
-      <div class="carousel-tracks">
-        <div class="track-line"><span class="track-num">1.</span><input class="track-input" placeholder="Artiste - Titre" id="ct1" autocomplete="off" spellcheck="false"></div>
-        <div class="track-line"><span class="track-num">2.</span><input class="track-input" placeholder="Artiste - Titre" id="ct2" autocomplete="off" spellcheck="false"></div>
-        <div class="track-line"><span class="track-num">3.</span><input class="track-input" placeholder="Artiste - Titre" id="ct3" autocomplete="off" spellcheck="false"></div>
-        <div class="track-line"><span class="track-num">4.</span><input class="track-input" placeholder="Artiste - Titre" id="ct4" autocomplete="off" spellcheck="false"></div>
-        <div class="track-line"><span class="track-num">5.</span><input class="track-input" placeholder="Artiste - Titre" id="ct5" autocomplete="off" spellcheck="false"></div>
+      <span class="section-label">Tracks (jusqu'à 10)</span>
+      <div class="carousel-tracks" id="carousel-tracks">
+        <!-- filled by JS -->
       </div>
-      <div id="extra-tracks" style="display:none;flex-direction:column;gap:8px;margin-top:8px">
-        <div class="track-line"><span class="track-num">6.</span><input class="track-input" placeholder="Artiste - Titre (optionnel)" id="ct6" autocomplete="off" spellcheck="false"></div>
-        <div class="track-line"><span class="track-num">7.</span><input class="track-input" placeholder="Artiste - Titre (optionnel)" id="ct7" autocomplete="off" spellcheck="false"></div>
-        <div class="track-line"><span class="track-num">8.</span><input class="track-input" placeholder="Artiste - Titre (optionnel)" id="ct8" autocomplete="off" spellcheck="false"></div>
-        <div class="track-line"><span class="track-num">9.</span><input class="track-input" placeholder="Artiste - Titre (optionnel)" id="ct9" autocomplete="off" spellcheck="false"></div>
-        <div class="track-line"><span class="track-num">10.</span><input class="track-input" placeholder="Artiste - Titre (optionnel)" id="ct10" autocomplete="off" spellcheck="false"></div>
-      </div>
-      <button class="btn-more" id="btn-more-tracks" onclick="toggleExtraTracks()" style="margin-top:8px;width:100%">+ Ajouter jusqu'à 10 tracks</button>
-      <div class="hint" style="margin-top:8px">Format : Artiste - Titre (sans genre)</div>
     </div>
+
     <button class="btn-go" id="btn-go-carousel" onclick="generateCarousel()" style="width:100%">Générer le carousel</button>
-  </div>
 
-  <!-- CAROUSEL RESULT -->
-  <div id="carousel-result" style="display:none;flex-direction:column;gap:20px">
-    <div>
-      <span class="section-label">Slide titre</span>
-      <canvas id="slide-titre-canvas" style="width:100%;border-radius:8px;display:block"></canvas>
-      <button class="btn-dl-small" onclick="dlSlideTitre()" style="margin-top:8px">↓ Télécharger slide titre</button>
+    <!-- Loader carousel -->
+    <div class="loader" id="loader-carousel">
+      <div class="step" id="cs1"><div class="dot"></div>Recherche covers Spotify...</div>
+      <div class="step" id="cs2"><div class="dot"></div>Recherche labels & années...</div>
+      <div class="step" id="cs3"><div class="dot"></div>Génération circles + liste...</div>
     </div>
-    <div>
-      <span class="section-label">5 covers circulaires</span>
-      <div class="carousel-covers" id="carousel-covers"></div>
-      <div class="cover-dl-row" id="cover-dl-row"></div>
-    </div>
-    <div id="carousel-photo-section" style="display:none">
-      <span class="section-label">Photo thématique</span>
-      <div class="kw-row" id="carousel-kw-row"></div>
-      <div class="photo-grid" id="carousel-photo-grid"></div>
-      <div class="photo-actions">
-        <button class="btn-more" onclick="loadMoreCarouselPhotos()">↻ Autres photos</button>
-        <button class="btn-dl-photo" id="btn-dl-carousel-photo" onclick="dlCarouselPhoto()" disabled>↓ Télécharger la photo</button>
-      </div>
-    </div>
-    <div>
-      <div class="caption-label">Caption carousel</div>
-      <div class="caption-box" id="carousel-caption"></div>
-    </div>
-    <div class="actions">
-      <button class="btn-copy" onclick="copyCarouselCaption()">Copier caption</button>
-      <button class="btn-reset" onclick="resetCarousel()">↺ Nouveau</button>
-    </div>
-  </div>
 
-  <div class="loader" id="loader">
-    <div class="step" id="s1"><div class="dot"></div>Recherche cover Spotify...</div>
-    <div class="step" id="s2"><div class="dot"></div>Recherche release originale + mots-clés photo...</div>
-    <div class="step" id="s3"><div class="dot"></div>Chargement des photos thématiques...</div>
-    <div class="step" id="s4"><div class="dot"></div>Génération caption + circle crop...</div>
-  </div>
+    <div class="error-box" id="err-carousel"></div>
 
-  <div class="error-box" id="err"></div>
-
-  <div class="result" id="result">
-
-    <div class="track-bar">
+    <!-- Carousel result -->
+    <div id="result-carousel" style="display:none;flex-direction:column;gap:20px">
       <div>
-        <div class="track-bar-artist" id="r-artist"></div>
-        <div class="track-bar-meta" id="r-meta"></div>
+        <span class="section-label">Covers circulaires</span>
+        <div class="carousel-grid" id="carousel-grid"></div>
       </div>
-      <div class="genre-pill" id="r-pill"></div>
-    </div>
-
-    <!-- COVER -->
-    <div class="visual-row">
-      <div class="visual-box">
-        <div class="visual-label">Cover originale</div>
-        <img class="cover-img" id="cover-img" src="" alt="cover">
+      <div>
+        <div class="caption-label">Liste tracks</div>
+        <div class="carousel-list-box" id="carousel-list"></div>
       </div>
-      <div class="visual-box">
-        <div class="visual-label">Visuel Instagram</div>
-        <canvas id="canvas"></canvas>
+      <div class="actions">
+        <button class="btn-copy" onclick="copyCaption('carousel-list')">Copier liste</button>
+        <button class="btn-reset" onclick="resetCarousel()">↺ Nouveau</button>
       </div>
     </div>
 
-    <div id="manual-zone"></div>
-
-    <!-- PHOTO PICKER -->
-    <div class="photo-section" id="photo-section" style="display:none">
-      <span class="section-label">Photo thématique</span>
-      <div class="kw-row" id="kw-row"></div>
-      <div class="photo-grid" id="photo-grid"></div>
-      <div class="photo-actions">
-        <button class="btn-more" onclick="loadMorePhotos()">↻ Autres photos</button>
-        <button class="btn-dl-photo" id="btn-dl-photo" onclick="dlPhoto()" disabled>↓ Télécharger la photo</button>
-      </div>
-    </div>
-
-    <!-- CAPTION -->
-    <div>
-      <div class="caption-label">Caption</div>
-      <div class="caption-box" id="caption"></div>
-    </div>
-
-    <div class="meta-row" id="meta"></div>
-
-    <div class="actions">
-      <button class="btn-dl" onclick="dlImage()">↓ Cover 1080×1080</button>
-      <button class="btn-copy" onclick="copyCaption()">Copier caption</button>
-      <button class="btn-reset" onclick="reset()">↺ Nouveau</button>
-    </div>
   </div>
+
 </div>
 
 <div class="toast" id="toast">Copié !</div>
 
 <script>
-const ANTHROPIC_KEY = ''; // Key in Cloudflare Worker
 const SPOTIFY_CLIENT_ID = '20a6b538a7d64b3f99e08397dee6b669';
 const SPOTIFY_CLIENT_SECRET = '21b0cacf77d44b5790ffd53c629202c7';
-const UNSPLASH_KEY = 'MGrzznKHhzvmPdmpGu9j9VdF3Y9wFc9VICJZHC6eUq8';
-const PEXELS_KEY = 'MIVQWxyZ5XV6GVS9FidQ9voDWpAtOB4joaME5JQlGZLXsH6HwUVjoVfK';
 const PROXY = 'https://w4x-img.onthew4x.workers.dev/?url=';
+const WORKER = 'https://w4x-img.onthew4x.workers.dev/api/claude';
 
 let spotifyToken = null, spotifyTokenExpiry = 0;
-let data = null, canvasUrl = null;
-let currentKeywords = [], currentPhotoPage = 1, selectedPhotoUrl = null, selectedPhotoFull = null;
+let canvasUrl = null;
+let singleData = null;
+let carouselGenre = 'house';
+let singleGenre = 'house';
 
-// ── PARSER ───────────────────────────────────────────────────────────────────
+function setSingleGenre(g) {
+  singleGenre = g;
+  document.getElementById('s-house').classList.toggle('active', g === 'house');
+  document.getElementById('s-techno').classList.toggle('active', g === 'techno');
+}
+let carouselCanvases = [];
+
+// ── INIT CAROUSEL INPUTS ──────────────────────────────────────────────────────
+function initCarouselInputs() {
+  const container = document.getElementById('carousel-tracks');
+  container.innerHTML = '';
+  for (let i = 1; i <= 10; i++) {
+    const div = document.createElement('div');
+    div.className = 'track-line';
+    div.innerHTML = `<span class="track-num">${i}.</span><input class="track-input" id="ct${i}" placeholder="Artiste - Titre" autocomplete="off" spellcheck="false">`;
+    container.appendChild(div);
+  }
+}
+initCarouselInputs();
+
+// ── MODE ──────────────────────────────────────────────────────────────────────
+function setMode(mode) {
+  document.getElementById('single-section').style.display = mode === 'single' ? 'flex' : 'none';
+  document.getElementById('single-section').style.flexDirection = 'column';
+  document.getElementById('carousel-section').style.display = mode === 'carousel' ? 'flex' : 'none';
+  document.getElementById('btn-mode-single').classList.toggle('active', mode === 'single');
+  document.getElementById('btn-mode-carousel').classList.toggle('active', mode === 'carousel');
+}
+
+function setCarouselGenre(g) {
+  carouselGenre = g;
+  document.getElementById('c-house').classList.toggle('active', g === 'house');
+  document.getElementById('c-techno').classList.toggle('active', g === 'techno');
+}
+
+// ── SCREENSHOT → CLAUDE VISION ────────────────────────────────────────────────
+async function readScreenshot(file, mode) {
+  if (!file) return;
+  const textEl = document.getElementById('ss-' + mode + '-text');
+  textEl.textContent = 'Analyse en cours...';
+  textEl.className = 'screenshot-zone-text';
+
+  try {
+    const base64 = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result.split(',')[1]);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+
+    const mediaType = file.type || 'image/jpeg';
+    const prompt = mode === 'single'
+      ? 'This is a Spotify screenshot of a single track. Extract the track name and artist name. Return ONLY JSON: {"artist": "...", "title": "..."}. No markdown.'
+      : 'This is a Spotify screenshot of a playlist. Extract all visible track names and artist names (ignore recommended songs section). Return ONLY a JSON array of up to 10 tracks: [{"artist": "...", "title": "..."}, ...]. No markdown.';
+
+    const res = await fetch(WORKER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 500,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+
+    const payload = await res.json();
+    const text = payload.content?.find(b => b.type === 'text')?.text || '';
+    const s = text.indexOf(mode === 'single' ? '{' : '[');
+    const e = text.lastIndexOf(mode === 'single' ? '}' : ']');
+    const parsed = JSON.parse(text.slice(s, e + 1));
+
+    if (mode === 'single') {
+      const val = `${parsed.artist} - ${parsed.title}`;
+      document.getElementById('track-input').value = val;
+      previewParse(val);
+      textEl.textContent = `✓ Détecté : ${parsed.artist} – ${parsed.title}`;
+      textEl.className = 'screenshot-zone-text success';
+    } else {
+      const tracks = Array.isArray(parsed) ? parsed : [parsed];
+      tracks.slice(0, 10).forEach((t, i) => {
+        const el = document.getElementById('ct' + (i + 1));
+        if (el) el.value = `${t.artist} - ${t.title}`;
+      });
+      textEl.textContent = `✓ ${tracks.length} track(s) détectée(s)`;
+      textEl.className = 'screenshot-zone-text success';
+    }
+  } catch(err) {
+    textEl.textContent = 'Erreur : ' + err.message;
+    textEl.className = 'screenshot-zone-text error';
+  }
+}
+
+// ── PARSER ────────────────────────────────────────────────────────────────────
 function parseInput(raw) {
-  const genreMatch = raw.match(/\s*\((house|techno)\)\s*$/i);
-  const genre = genreMatch ? genreMatch[1].toLowerCase() : 'techno';
-  const withoutGenre = genreMatch ? raw.slice(0, raw.lastIndexOf(genreMatch[0])).trim() : raw.trim();
+  // Strip genre if accidentally included
+  const withoutGenre = raw.replace(/\s*\((house|techno)\)\s*$/i, '').trim();
   const sep = withoutGenre.indexOf(' - ');
   const artist = sep > -1 ? withoutGenre.slice(0, sep).trim() : withoutGenre.trim();
-  const title  = sep > -1 ? withoutGenre.slice(sep + 3).trim() : '';
-  return { artist, title, genre };
+  const title = sep > -1 ? withoutGenre.slice(sep + 3).trim() : '';
+  return { artist, title };
 }
 
 function previewParse(val) {
@@ -315,7 +361,7 @@ function previewParse(val) {
   if (!val.trim()) { el.textContent = ''; el.className = 'parsed-preview'; return; }
   const { artist, title, genre } = parseInput(val);
   if (artist && title) {
-    el.textContent = `→ Artiste: "${artist}"  |  Titre: "${title}"  |  Genre: ${genre}`;
+    el.textContent = `→ "${artist}" | "${title}"`;
     el.className = 'parsed-preview ok';
   } else {
     el.textContent = 'Ajoutez (House) ou (Techno) à la fin';
@@ -323,7 +369,7 @@ function previewParse(val) {
   }
 }
 
-// ── SPOTIFY ──────────────────────────────────────────────────────────────────
+// ── SPOTIFY ───────────────────────────────────────────────────────────────────
 async function getSpotifyToken() {
   if (spotifyToken && Date.now() < spotifyTokenExpiry) return spotifyToken;
   const res = await fetch('https://accounts.spotify.com/api/token', {
@@ -343,91 +389,13 @@ async function searchSpotify(artist, title) {
     const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=1`, { headers: { 'Authorization': 'Bearer ' + token } });
     const d = await res.json();
     const track = d?.tracks?.items?.[0];
-    if (track) return { coverUrl: track.album.images[0]?.url || '', spotifyLabel: track.album.label || '', spotifyYear: track.album.release_date?.split('-')[0] || '', albumName: track.album.name };
+    if (track) return { coverUrl: track.album.images[0]?.url || '', albumName: track.album.name };
   }
   return null;
 }
 
-// ── UNSPLASH PHOTO PICKER ────────────────────────────────────────────────────
-async function fetchPhotos(keywords, page = 1) {
-  const query = keywords.slice(0, 3).join(' ');
-  const results = [];
-
-  // Unsplash
-  try {
-    const unsplashUrl = 'https://api.unsplash.com/search/photos?query=' + encodeURIComponent(query) + '&per_page=3&page=' + page + '&orientation=squarish&client_id=' + UNSPLASH_KEY;
-    const res = await fetch(PROXY + encodeURIComponent(unsplashUrl));
-    const d = JSON.parse(await res.text());
-    if (d.results) results.push(...d.results.map(p => ({ urls: p.urls, alt_description: p.alt_description, source: 'unsplash' })));
-  } catch(e) { console.warn('Unsplash error:', e); }
-
-  // Pexels
-  try {
-    const pexelsUrl = 'https://api.pexels.com/v1/search?query=' + encodeURIComponent(query) + '&per_page=3&page=' + page + '&orientation=square';
-    const res2 = await fetch(PROXY + encodeURIComponent(pexelsUrl) + '&headers=' + encodeURIComponent('Authorization:' + PEXELS_KEY));
-    const d2 = JSON.parse(await res2.text());
-    if (d2.photos) results.push(...d2.photos.map(p => ({ urls: { small: p.src.medium, full: p.src.original }, alt_description: p.alt, source: 'pexels' })));
-  } catch(e) {
-    // Pexels direct fallback
-    try {
-      const pexelsUrl = 'https://api.pexels.com/v1/search?query=' + encodeURIComponent(query) + '&per_page=3&page=' + page + '&orientation=square';
-      const res2 = await fetch(pexelsUrl, { headers: { 'Authorization': PEXELS_KEY } });
-      const d2 = await res2.json();
-      if (d2.photos) results.push(...d2.photos.map(p => ({ urls: { small: p.src.medium, full: p.src.original }, alt_description: p.alt, source: 'pexels' })));
-    } catch(e2) { console.warn('Pexels error:', e2); }
-  }
-
-  return results;
-}
-
-function renderPhotos(photos) {
-  const grid = document.getElementById('photo-grid');
-  grid.innerHTML = '';
-  photos.forEach(p => {
-    const thumb = document.createElement('div');
-    thumb.className = 'photo-thumb';
-    thumb.innerHTML = `<img src="${p.urls.small}" loading="lazy" alt="${p.alt_description||''}">`;
-    thumb.onclick = () => {
-      document.querySelectorAll('.photo-thumb').forEach(t => t.classList.remove('selected'));
-      thumb.classList.add('selected');
-      selectedPhotoUrl = p.urls.small;
-      selectedPhotoFull = p.urls.full;
-      document.getElementById('btn-dl-photo').disabled = false;
-    };
-    grid.appendChild(thumb);
-  });
-}
-
-async function loadMorePhotos() {
-  const btn = document.querySelector('.btn-more');
-  btn.textContent = '...';
-  btn.disabled = true;
-  // Alternate between paginating and rotating keywords for variety
-  currentPhotoPage++;
-  // Try next page first, fallback to rotating keywords
-  let photos = await fetchPhotos(currentKeywords, currentPhotoPage);
-  if (!photos || photos.length === 0) {
-    // Rotate keywords: move first keyword to end
-    currentKeywords = [...currentKeywords.slice(1), currentKeywords[0]];
-    currentPhotoPage = 1;
-    photos = await fetchPhotos(currentKeywords, 1);
-  }
-  if (photos && photos.length > 0) renderPhotos(photos);
-  btn.textContent = '↻ Autres photos';
-  btn.disabled = false;
-}
-
-function dlPhoto() {
-  if (!selectedPhotoFull) return;
-  const a = document.createElement('a');
-  a.href = selectedPhotoFull;
-  a.download = 'w4x_photo_thematique.jpg';
-  a.target = '_blank';
-  a.click();
-}
-
-// ── CLAUDE SYSTEM ─────────────────────────────────────────────────────────────
-const SYSTEM = `You are the content assistant for @onthew4x, an Instagram underground house/techno account.
+// ── CLAUDE SYSTEM PROMPT ──────────────────────────────────────────────────────
+const SYSTEM = `You are content assistant for @onthew4x, an Instagram underground house/techno account.
 
 Respond ONLY with raw JSON. No markdown, no backticks.
 
@@ -435,133 +403,95 @@ Respond ONLY with raw JSON. No markdown, no backticks.
   "artist": "", "title": "", "label": "", "year": "", "genre": "house|techno",
   "label_city": "", "label_country": "",
   "artist_instagram": "", "label_instagram": "",
-  "photo_keywords": ["kw1","kw2","kw3","kw4"],
   "caption": ""
 }
 
-LABEL/YEAR: Do ONE search "[artist] [title] bandcamp OR discogs" — use earliest release date found. Ignore compilations.
+LABEL/YEAR: Do ONE search "[artist] [title] bandcamp OR discogs" — use earliest release date. Ignore compilations.
 
 INSTAGRAM: Search "[name] instagram" — return @handle or "".
 
-PHOTO KEYWORDS: 4 visual English words matching the track's mood for Unsplash. Be specific (e.g. "concrete brutalism", "fog forest", "70s party"). Not generic like "music" or "techno".
-
-CAPTION FORMAT (follow exactly):
+CAPTION FORMAT (follow exactly, no deviations):
 ": Artist – Title
 Label: LabelName, Year
 
-[One specific sentence about this track. NOT: timeless/classic/iconic/banger/needs no introduction/underground gem]
+[One paragraph: 1-2 sentences describing the actual sound. Specific: bassline, pads, percussion, tempo feel, groove. NO clichés: timeless/classic/iconic/banger/needs no introduction/underground gem/dancefloor weapon.]"`;
 
-[1-2 sentences on the actual sound: specific elements, groove, texture]"
-
-Rules:
-- Line 1: exactly ": Artist – Title" — colon-space, nothing else
-- Line 2: "Label: X, Year"
-- Blank line between each section
-- Concrete and specific always`
-
-// ── MAIN ──────────────────────────────────────────────────────────────────────
-function setStep(n) {
-  ['s1','s2','s3','s4'].forEach((id,i) => {
+// ── STEP INDICATOR ────────────────────────────────────────────────────────────
+function setStep(n, prefix) {
+  const ids = prefix === 'c' ? ['cs1','cs2','cs3'] : ['s1','s2','s3'];
+  ids.forEach((id, i) => {
     const el = document.getElementById(id);
+    if (!el) return;
     el.className = 'step' + (i+1 < n ? ' done' : i+1 === n ? ' active' : '');
   });
 }
 
+// ── GENERATE SINGLE ───────────────────────────────────────────────────────────
 async function generate() {
   const raw = document.getElementById('track-input').value.trim();
   if (!raw) return;
-  const { artist, title, genre } = parseInput(raw);
+  const { artist, title } = parseInput(raw);
+  const genre = singleGenre;
   if (!artist || !title) {
-    document.getElementById('err').textContent = 'Format invalide — ex: Artiste - Titre (House)';
-    document.getElementById('err').classList.add('visible');
+    showErr('err-single', 'Format invalide — ex: Artiste - Titre (House)');
     return;
   }
 
-  document.getElementById('result').classList.remove('visible');
-  document.getElementById('err').classList.remove('visible');
-  document.getElementById('loader').classList.add('visible');
+  hideResult('result-single');
+  hideErr('err-single');
+  document.getElementById('loader-single').classList.add('visible');
   document.getElementById('btn-go').disabled = true;
   document.getElementById('manual-zone').innerHTML = '';
-  document.getElementById('photo-section').style.display = 'none';
-  selectedPhotoUrl = null; selectedPhotoFull = null;
-  setStep(1);
+  setStep(1, '');
 
   try {
     // Step 1 — Spotify cover
-    let coverUrl = '', spotifyData = null;
-    try { spotifyData = await searchSpotify(artist, title); coverUrl = spotifyData?.coverUrl || ''; } catch(e) {}
+    let coverUrl = '';
+    try { const sd = await searchSpotify(artist, title); coverUrl = sd?.coverUrl || ''; } catch(e) {}
+    setStep(2, '');
 
-    setStep(2);
-
-    // Step 2 — Claude: label, caption, photo keywords
-    const hint = spotifyData
-      ? `Spotify: label="${spotifyData.spotifyLabel}", year="${spotifyData.spotifyYear}", album="${spotifyData.albumName}". Cross-check against original sources.`
-      : 'Not on Spotify. Search Bandcamp, Discogs, Beatport, RA.';
-
+    // Step 2 — Claude
+    const hint = coverUrl ? `Found on Spotify.` : 'Not on Spotify. Search Bandcamp, Discogs.';
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 90000);
-    const res = await fetch('https://w4x-img.onthew4x.workers.dev/api/claude', {
+    const tid = setTimeout(() => controller.abort(), 90000);
+    const res = await fetch(WORKER, {
       signal: controller.signal,
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
+        max_tokens: 800,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         system: SYSTEM,
-        messages: [{ role: 'user', content: `Artist: ${artist}\nTitle: ${title}\nGenre: ${genre}\n${hint}\n\nUse your knowledge to find the original label, year, Instagram handles for artist and label. Generate photo_keywords for Unsplash matching the track mood. Return JSON only.` }]
+        messages: [{ role: 'user', content: `Artist: ${artist}\nTitle: ${title}\nGenre: ${genre}\n${hint}\n\nFind label, year, Instagram handles. Write caption. Return JSON only.` }]
       })
     });
-
-    clearTimeout(timeoutId);
+    clearTimeout(tid);
     if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
     const payload = await res.json();
-
     const textBlock = payload.content?.find(b => b.type === 'text');
     if (!textBlock?.text) throw new Error('Pas de réponse texte');
 
     let txt = textBlock.text.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
     const s = txt.indexOf('{'), e2 = txt.lastIndexOf('}');
-    if (s < 0 || e2 < 0) throw new Error('Réponse invalide — réessayez');
-    data = JSON.parse(txt.slice(s, e2 + 1));
-    data.genre = genre;
+    singleData = JSON.parse(txt.slice(s, e2 + 1));
+    singleData.genre = genre;
 
-    // Clean caption
-    const lines = data.caption.split('\n');
-    lines[0] = lines[0].replace(/^[^:]*/, '').replace(/^:\s*/, ': ');
-    if (!lines[0].startsWith(': ')) lines[0] = ': ' + lines[0];
-    data.caption = lines.join('\n');
+    // Fix caption first line
+    const lines = singleData.caption.split('\n');
+    lines[0] = ': ' + artist + ' \u2013 ' + title;
+    singleData.caption = lines.join('\n');
 
-    // Step 3 — Fetch Unsplash photos
-    setStep(3);
-    // Generate fallback keywords from genre if photo_keywords missing
-    const defaultKw = genre === 'techno' 
-      ? ['dark industrial', 'concrete brutalism', 'urban night', 'abstract machine']
-      : ['vintage dance', 'warm light', 'disco party', 'soul music'];
-    currentKeywords = (data.photo_keywords && data.photo_keywords.length > 0) 
-      ? data.photo_keywords 
-      : defaultKw;
-    currentPhotoPage = 1;
+    setStep(3, '');
 
-    // Show keywords
-    const kwRow = document.getElementById('kw-row');
-    kwRow.innerHTML = currentKeywords.map(k => `<div class="kw-pill">${k}</div>`).join('');
-
-    const photos = await fetchPhotos(currentKeywords, 1);
-    if (photos.length > 0) {
-      renderPhotos(photos);
-      document.getElementById('photo-section').style.display = 'block';
-    }
-
-    // Step 4 — Canvas
-    setStep(4);
+    // Step 3 — Canvas
     await drawCanvas(coverUrl, genre);
-    render(data);
+    renderSingle(singleData);
 
   } catch(err) {
-    document.getElementById('loader').classList.remove('visible');
+    document.getElementById('loader-single').classList.remove('visible');
     document.getElementById('btn-go').disabled = false;
-    document.getElementById('err').textContent = 'Erreur : ' + err.message;
-    document.getElementById('err').classList.add('visible');
+    showErr('err-single', 'Erreur : ' + err.message);
   }
 }
 
@@ -612,13 +542,13 @@ function showManual() {
   document.getElementById('cover-img').style.opacity='.3';
   document.getElementById('manual-zone').innerHTML=`
     <div class="manual-upload">
-      <div class="mu-label">Cover non trouvée — glissez-la depuis Bandcamp ou Discogs</div>
+      <div class="mu-label">Cover non trouvée — glissez-la manuellement</div>
       <input type="file" accept="image/*" style="font-size:12px;color:var(--white);font-family:var(--mono);cursor:pointer;width:100%" onchange="applyManual(this.files[0])">
     </div>`;
 }
 
 function applyManual(file) {
-  if (!file||!data) return;
+  if (!file||!singleData) return;
   const r=new FileReader();
   r.onload=e=>{
     document.getElementById('cover-img').src=e.target.result;
@@ -628,7 +558,7 @@ function applyManual(file) {
       const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d');
       const S=1080,C=Math.round(S*.98),O=Math.round((S-C)/2);
       canvas.width=S; canvas.height=S;
-      ctx.fillStyle=data.genre==='house'?'#ffffff':'#000000'; ctx.fillRect(0,0,S,S);
+      ctx.fillStyle=singleData.genre==='house'?'#ffffff':'#000000'; ctx.fillRect(0,0,S,S);
       paint(ctx,img,S,C,O); canvasUrl=canvas.toDataURL('image/png');
       document.getElementById('manual-zone').innerHTML='';
     };
@@ -637,21 +567,21 @@ function applyManual(file) {
   r.readAsDataURL(file);
 }
 
-// ── RENDER ────────────────────────────────────────────────────────────────────
-function render(d) {
-  document.getElementById('loader').classList.remove('visible');
-  document.getElementById('r-artist').textContent=`${d.artist} – ${d.title}`;
-  document.getElementById('r-meta').textContent=`${d.label} · ${d.year}`;
+// ── RENDER SINGLE ─────────────────────────────────────────────────────────────
+function renderSingle(d) {
+  document.getElementById('loader-single').classList.remove('visible');
+  document.getElementById('r-artist').textContent=`${d.artist} \u2013 ${d.title}`;
+  document.getElementById('r-meta').textContent=`${d.label} \u00b7 ${d.year}`;
   const pill=document.getElementById('r-pill');
   pill.textContent=d.genre==='house'?'House':'Techno';
   pill.className=`genre-pill ${d.genre}`;
   document.getElementById('caption').textContent=d.caption;
   let chips='';
-  if(d.label_city) chips+=`<div class="meta-chip">📍 Localisation <span>${d.label_city}, ${d.label_country}</span></div>`;
-  if(d.artist_instagram) chips+=`<div class="meta-chip">Tag artiste <span>${d.artist_instagram}</span></div>`;
-  if(d.label_instagram) chips+=`<div class="meta-chip">Tag label <span>${d.label_instagram}</span></div>`;
+  if(d.label_city) chips+=`<div class="meta-chip">📍 <span>${d.label_city}, ${d.label_country}</span></div>`;
+  if(d.artist_instagram) chips+=`<div class="meta-chip">Artiste <span>${d.artist_instagram}</span></div>`;
+  if(d.label_instagram) chips+=`<div class="meta-chip">Label <span>${d.label_instagram}</span></div>`;
   document.getElementById('meta').innerHTML=chips;
-  document.getElementById('result').classList.add('visible');
+  document.getElementById('result-single').classList.add('visible');
   document.getElementById('btn-go').disabled=false;
 }
 
@@ -659,570 +589,187 @@ function dlImage() {
   if(!canvasUrl) return;
   const a=document.createElement('a');
   a.href=canvasUrl;
-  a.download=`${(data?.artist||'cover').replace(/\s+/g,'_')}_${(data?.title||'track').replace(/\s+/g,'_')}_w4x.png`;
+  a.download=`${(singleData?.artist||'cover').replace(/\s+/g,'_')}_w4x.png`;
   a.click();
 }
 
-function copyCaption() {
-  navigator.clipboard.writeText(document.getElementById('caption').textContent).then(()=>{
+// ── GENERATE CAROUSEL ─────────────────────────────────────────────────────────
+const CAROUSEL_SYSTEM = `You are content assistant for @onthew4x, underground house/techno Instagram.
+
+Respond ONLY with raw JSON array. No markdown, no backticks.
+
+[{"artist":"","title":"","label":"","year":""}]
+
+For each track: search bandcamp OR discogs to find original label and earliest release year. Return array only.`;
+
+async function generateCarousel() {
+  const tracks = [];
+  for (let i = 1; i <= 10; i++) {
+    const v = document.getElementById('ct' + i)?.value.trim();
+    if (v) tracks.push(v);
+  }
+  if (tracks.length === 0) { showErr('err-carousel', 'Entrez au moins 1 track'); return; }
+
+  document.getElementById('result-carousel').style.display = 'none';
+  hideErr('err-carousel');
+  document.getElementById('loader-carousel').classList.add('visible');
+  document.getElementById('btn-go-carousel').disabled = true;
+  setStep(1, 'c');
+
+  try {
+    // Step 1 — Spotify covers in parallel
+    const coverPromises = tracks.map(t => {
+      const sep = t.indexOf(' - ');
+      const artist = sep > -1 ? t.slice(0, sep).trim() : t;
+      const title = sep > -1 ? t.slice(sep + 3).trim() : t;
+      return searchSpotify(artist, title).then(sd => sd?.coverUrl || '').catch(() => '');
+    });
+    const covers = await Promise.all(coverPromises);
+    setStep(2, 'c');
+
+    // Step 2 — Claude: labels & years
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 90000);
+    const res = await fetch(WORKER, {
+      signal: controller.signal,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        system: CAROUSEL_SYSTEM,
+        messages: [{ role: 'user', content: `Find original label and year for each track. Search bandcamp/discogs.\n\nTracks:\n${tracks.map((t,i)=>`${i+1}. ${t}`).join('\n')}\n\nReturn JSON array only.` }]
+      })
+    });
+    clearTimeout(tid);
+    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
+    const payload = await res.json();
+    const textBlock = payload.content?.find(b => b.type === 'text');
+    if (!textBlock?.text) throw new Error('Pas de réponse');
+
+    let txt = textBlock.text.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
+    const s = txt.indexOf('['), e2 = txt.lastIndexOf(']');
+    const trackData = JSON.parse(txt.slice(s, e2 + 1));
+
+    setStep(3, 'c');
+
+    // Step 3 — Draw circles
+    const grid = document.getElementById('carousel-grid');
+    grid.innerHTML = '';
+    carouselCanvases = [];
+
+    for (let i = 0; i < trackData.length; i++) {
+      const t = trackData[i];
+      const coverUrl = covers[i] || '';
+
+      const item = document.createElement('div');
+      item.className = 'carousel-item';
+
+      const circleDiv = document.createElement('div');
+      circleDiv.className = 'carousel-circle';
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 1080; canvas.height = 1080;
+      const ctx = canvas.getContext('2d');
+      const S=1080, C=Math.round(S*.98), O=Math.round((S-C)/2);
+      ctx.fillStyle = carouselGenre==='house'?'#ffffff':'#000000';
+      ctx.fillRect(0,0,S,S);
+
+      const previewCanvas = document.createElement('canvas');
+      previewCanvas.width = 200; previewCanvas.height = 200;
+      circleDiv.appendChild(previewCanvas);
+
+      const label = document.createElement('div');
+      label.className = 'carousel-item-label';
+      label.textContent = (t.artist||'') + '\n' + (t.title||'');
+
+      const dlBtn = document.createElement('button');
+      dlBtn.className = 'btn-dl-small';
+      dlBtn.textContent = '↓ ' + (i+1);
+      const capturedCanvas = canvas;
+      const capturedArtist = t.artist || '';
+      const capturedTitle = t.title || '';
+      dlBtn.onclick = () => {
+        const a = document.createElement('a');
+        a.href = capturedCanvas.toDataURL('image/png');
+        a.download = `${capturedArtist.replace(/\s+/g,'_')}_${capturedTitle.replace(/\s+/g,'_')}_w4x.png`;
+        a.click();
+      };
+
+      item.appendChild(circleDiv);
+      item.appendChild(label);
+      item.appendChild(dlBtn);
+      grid.appendChild(item);
+      carouselCanvases.push(canvas);
+
+      // Draw cover
+      await new Promise(resolve => {
+        const syncPreview = () => {
+          const pCtx = previewCanvas.getContext('2d');
+          pCtx.drawImage(canvas, 0, 0, 200, 200);
+        };
+        if (!coverUrl) { drawFallback(ctx,S,C,O,carouselGenre); syncPreview(); resolve(); return; }
+        loadImg(coverUrl, false, img => {
+          if (img) { paint(ctx,img,S,C,O); }
+          else { drawFallback(ctx,S,C,O,carouselGenre); }
+          syncPreview(); resolve();
+        });
+      });
+    }
+
+    // Build list text
+    const listText = trackData.map((t,i) =>
+      `${i+1}. ${t.artist} \u2013 ${t.title}\nLabel: ${t.label}, ${t.year}`
+    ).join('\n\n');
+    document.getElementById('carousel-list').textContent = listText;
+    document.getElementById('result-carousel').style.display = 'flex';
+    document.getElementById('result-carousel').style.flexDirection = 'column';
+
+  } catch(err) {
+    showErr('err-carousel', 'Erreur : ' + err.message);
+  }
+
+  document.getElementById('loader-carousel').classList.remove('visible');
+  document.getElementById('btn-go-carousel').disabled = false;
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function showErr(id, msg) { const el=document.getElementById(id); el.textContent=msg; el.classList.add('visible'); }
+function hideErr(id) { document.getElementById(id).classList.remove('visible'); }
+function hideResult(id) { document.getElementById(id).classList.remove('visible'); }
+
+function copyCaption(id) {
+  navigator.clipboard.writeText(document.getElementById(id).textContent).then(()=>{
     const t=document.getElementById('toast');
     t.classList.add('show');
     setTimeout(()=>t.classList.remove('show'),1800);
   });
 }
 
-function reset() {
-  data=null; canvasUrl=null; selectedPhotoUrl=null; selectedPhotoFull=null;
-  document.getElementById('result').classList.remove('visible');
-  document.getElementById('err').classList.remove('visible');
-  document.getElementById('loader').classList.remove('visible');
+function resetSingle() {
+  singleData=null; canvasUrl=null;
+  hideResult('result-single'); hideErr('err-single');
+  document.getElementById('loader-single').classList.remove('visible');
   document.getElementById('track-input').value='';
   document.getElementById('parsed-preview').textContent='';
   document.getElementById('manual-zone').innerHTML='';
-  document.getElementById('photo-section').style.display='none';
   document.getElementById('btn-go').disabled=false;
-}
-
-document.getElementById('track-input').addEventListener('keydown', e=>{ if(e.key==='Enter') generate(); });
-
-// ── MODE TOGGLE ───────────────────────────────────────────────────────────────
-let currentMode = 'single';
-let carouselGenre = 'house';
-let carouselCanvases = [];
-let slideTitreUrl = null;
-let carouselPhotoUrl = null;
-let carouselPhotoFull = null;
-let carouselKeywords = [];
-let carouselPhotoPage = 1;
-
-function setMode(mode) {
-  currentMode = mode;
-  document.getElementById('single-input').style.display = mode === 'single' ? 'block' : 'none';
-  document.getElementById('carousel-input').style.display = mode === 'carousel' ? 'flex' : 'none';
-  document.getElementById('btn-mode-single').classList.toggle('active', mode === 'single');
-  document.getElementById('btn-mode-carousel').classList.toggle('active', mode === 'carousel');
-  document.getElementById('carousel-result').style.display = 'none';
-}
-
-function setCarouselGenre(g) {
-  carouselGenre = g;
-  document.getElementById('c-house').classList.toggle('active', g === 'house');
-  document.getElementById('c-techno').classList.toggle('active', g === 'techno');
-}
-
-// ── CAROUSEL SYSTEM PROMPT ────────────────────────────────────────────────────
-const CAROUSEL_SYSTEM = `You are content assistant for @onthew4x, underground house/techno Instagram.
-
-Respond ONLY with raw JSON. No markdown, no backticks.
-
-{
-  "theme": "", "genre": "house|techno",
-  "tracks": [{"artist":"","title":"","label":"","year":"","description":""}],
-  "photo_keywords": ["kw1","kw2","kw3","kw4"],
-  "caption": ""
-}
-
-LABELS: Search bandcamp/discogs for each track. Use earliest release date.
-
-PHOTO KEYWORDS: 4 visual words capturing the OVERALL mood of all 5 tracks for Unsplash.
-
-Also find for each track:
-- artist_instagram: search "[artist] instagram" → @handle or ""
-- label_instagram: search "[label] instagram" → @handle or ""
-
-Add these fields to each track object.
-
-CAPTION:
-"[1-2 evocative lines about the theme]
-
-[2-3 lines on overall vibe]
-
-OnTheW4x 🖤
-
-1. Title – Artist
-Label: X, Year
-[1-2 sentences on sound]
-
-2. Title – Artist
-Label: X, Year
-[1-2 sentences on sound]
-
-[...repeat for all 5]"
-
-Descriptions: concrete and specific. No clichés.`
-
-// ── GENERATE CAROUSEL ─────────────────────────────────────────────────────────
-async function generateCarousel() {
-  const theme = document.getElementById('carousel-theme').value.trim();
-  const tracks = [1,2,3,4,5,6,7,8,9,10].map(i => { const el = document.getElementById('ct'+i); return el ? el.value.trim() : ''; }).filter(t => t);
-  
-  if (!theme || tracks.length < 2) {
-    alert('Entrez le thème et au moins 2 tracks');
-    return;
-  }
-
-  document.getElementById('carousel-result').style.display = 'none';
-  document.getElementById('btn-go-carousel').disabled = true;
-  document.getElementById('loader').classList.add('visible');
-  setStep(1);
-
-  try {
-    // Step 1 — Get covers from Spotify for all tracks
-    setStep(1);
-    const spotifyCovers = [];
-    for (const track of tracks) {
-      const sep = track.indexOf(' - ');
-      const artist = sep > -1 ? track.slice(0, sep).trim() : track;
-      const title = sep > -1 ? track.slice(sep + 3).trim() : track;
-      try {
-        const sd = await searchSpotify(artist, title);
-        spotifyCovers.push(sd?.coverUrl || '');
-      } catch(e) { spotifyCovers.push(''); }
-    }
-
-    setStep(2);
-
-    // Step 2 — Claude: labels, descriptions, caption, photo keywords
-    const trackList = tracks.map((t,i) => `${i+1}. ${t}`).join('\n');
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 90000);
-    
-    const res = await fetch('https://w4x-img.onthew4x.workers.dev/api/claude', {
-      signal: controller.signal,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        system: CAROUSEL_SYSTEM,
-        messages: [{ role: 'user', content: `Theme: ${theme}\nGenre: ${carouselGenre}\nTracks:\n${trackList}\n\nSearch Bandcamp/Discogs for each track label and year. Write descriptions and caption. Return JSON only.` }]
-      })
-    });
-    clearTimeout(timeoutId);
-
-    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
-    const payload = await res.json();
-    const textBlock = payload.content?.find(b => b.type === 'text');
-    if (!textBlock?.text) throw new Error('Pas de réponse texte');
-
-    let txt = textBlock.text.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
-    const s = txt.indexOf('{'), e2 = txt.lastIndexOf('}');
-    const cdata = JSON.parse(txt.slice(s, e2+1));
-
-    setStep(3);
-
-    // Step 3 — Draw slide titre
-    drawSlideTitre(theme, carouselGenre);
-
-    // Draw 5 covers
-    carouselCanvases = [];
-    const coversDiv = document.getElementById('carousel-covers');
-    const dlRow = document.getElementById('cover-dl-row');
-    coversDiv.innerHTML = '';
-    dlRow.innerHTML = '';
-
-    for (let i = 0; i < cdata.tracks.length; i++) {
-      const t = cdata.tracks[i];
-      const coverUrl = spotifyCovers[i] || t.cover_url || '';
-      
-      const wrapper = document.createElement('div');
-      wrapper.style.cssText = 'display:flex;flex-direction:column;gap:4px;align-items:center';
-      
-      const canvas = document.createElement('canvas');
-      canvas.width = 1080; canvas.height = 1080;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = carouselGenre === 'house' ? '#ffffff' : '#000000';
-      ctx.fillRect(0, 0, 1080, 1080);
-      
-      const preview = document.createElement('div');
-      preview.style.cssText = 'width:100%;aspect-ratio:1;border-radius:50%;overflow:hidden;background:var(--surface2)';
-      const previewCanvas = document.createElement('canvas');
-      previewCanvas.style.cssText = 'width:100%;height:100%;display:block';
-      preview.appendChild(previewCanvas);
-      wrapper.appendChild(preview);
-      
-      const label = document.createElement('div');
-      label.style.cssText = 'font-family:var(--mono);font-size:9px;color:var(--muted2);text-align:center;line-height:1.3';
-      label.textContent = t.artist;
-      wrapper.appendChild(label);
-      coversDiv.appendChild(wrapper);
-
-      // Draw cover async
-      await drawCanvasForCarousel(canvas, previewCanvas, coverUrl, carouselGenre, i);
-      carouselCanvases.push({ canvas, artist: t.artist, title: t.title });
-
-      // Download button
-      const btn = document.createElement('button');
-      btn.className = 'btn-dl-small';
-      btn.textContent = `↓ Cover ${i+1}`;
-      btn.onclick = () => {
-        const a = document.createElement('a');
-        a.href = canvas.toDataURL('image/png');
-        a.download = `${t.artist.replace(/\s+/g,'_')}_${t.title.replace(/\s+/g,'_')}_w4x.png`;
-        a.click();
-      };
-      dlRow.appendChild(btn);
-    }
-
-    setStep(4);
-
-    // Photos
-    carouselKeywords = cdata.photo_keywords || [carouselGenre, 'abstract', 'dark', 'moody'];
-    carouselPhotoPage = 1;
-    const cwRow = document.getElementById('carousel-kw-row');
-    cwRow.innerHTML = carouselKeywords.map(k => `<div class="kw-pill">${k}</div>`).join('');
-    const photos = await fetchPhotos(carouselKeywords, 1);
-    if (photos.length > 0) {
-      renderCarouselPhotos(photos);
-      document.getElementById('carousel-photo-section').style.display = 'block';
-    }
-
-    // Caption
-    document.getElementById('carousel-caption').textContent = cdata.caption || '';
-    document.getElementById('carousel-result').style.display = 'flex';
-
-  } catch(err) {
-    document.getElementById('loader').classList.remove('visible');
-    document.getElementById('btn-go-carousel').disabled = false;
-    document.getElementById('err').textContent = 'Erreur : ' + err.message;
-    document.getElementById('err').classList.add('visible');
-  }
-
-  document.getElementById('loader').classList.remove('visible');
-  document.getElementById('btn-go-carousel').disabled = false;
-}
-
-function drawSlideTitre(theme, genre) {
-  const canvas = document.getElementById('slide-titre-canvas');
-  canvas.width = 1080; canvas.height = 1080;
-  const ctx = canvas.getContext('2d');
-  const bg = genre === 'house' ? '#ffffff' : '#000000';
-  const fg = genre === 'house' ? '#000000' : '#ffffff';
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, 1080, 1080);
-  
-  // Circle
-  ctx.beginPath();
-  ctx.arc(540, 540, 480, 0, Math.PI * 2);
-  ctx.strokeStyle = fg;
-  ctx.lineWidth = 8;
-  ctx.stroke();
-
-  // Theme text
-  ctx.fillStyle = fg;
-  ctx.textAlign = 'center';
-  const words = theme.split(' ');
-  const lines = [];
-  let line = '';
-  for (const word of words) {
-    const test = line ? line + ' ' + word : word;
-    ctx.font = 'bold 72px sans-serif';
-    if (ctx.measureText(test).width > 800 && line) {
-      lines.push(line);
-      line = word;
-    } else {
-      line = test;
-    }
-  }
-  if (line) lines.push(line);
-  
-  ctx.font = 'bold 72px sans-serif';
-  const lineH = 90;
-  const startY = 540 - (lines.length - 1) * lineH / 2;
-  lines.forEach((l, i) => ctx.fillText(l, 540, startY + i * lineH));
-
-  // OnTheW4x signature
-  ctx.font = '36px monospace';
-  ctx.fillStyle = genre === 'house' ? '#666' : '#999';
-  ctx.fillText('OnTheW4x', 540, 900);
-
-  slideTitreUrl = canvas.toDataURL('image/png');
-}
-
-function dlSlideTitre() {
-  if (!slideTitreUrl) return;
-  const a = document.createElement('a');
-  a.href = slideTitreUrl;
-  a.download = 'slide_titre_w4x.png';
-  a.click();
-}
-
-async function drawCanvasForCarousel(canvas, previewCanvas, url, genre, idx) {
-  const ctx = canvas.getContext('2d');
-  const S=1080, C=Math.round(S*.98), O=Math.round((S-C)/2);
-
-  const syncPreview = () => {
-    const pCtx = previewCanvas.getContext('2d');
-    previewCanvas.width = 200; previewCanvas.height = 200;
-    pCtx.drawImage(canvas, 0, 0, 200, 200);
-  };
-
-  if (!url) { drawFallback(ctx, S, C, O, genre); syncPreview(); return; }
-
-  await new Promise(resolve => {
-    loadImg(url, false, img => {
-      if (img) {
-        paint(ctx, img, S, C, O);
-        syncPreview();
-        resolve();
-      } else {
-        loadImg(PROXY + encodeURIComponent(url), true, img2 => {
-          if (img2) { paint(ctx, img2, S, C, O); }
-          else { drawFallback(ctx, S, C, O, genre); }
-          syncPreview();
-          resolve();
-        });
-      }
-    });
-  });
-}
-
-function renderCarouselPhotos(photos) {
-  const grid = document.getElementById('carousel-photo-grid');
-  grid.innerHTML = '';
-  photos.forEach(p => {
-    const thumb = document.createElement('div');
-    thumb.className = 'photo-thumb';
-    thumb.innerHTML = `<img src="${p.urls.small}" loading="lazy" alt="">`;
-    thumb.onclick = () => {
-      document.querySelectorAll('#carousel-photo-grid .photo-thumb').forEach(t => t.classList.remove('selected'));
-      thumb.classList.add('selected');
-      carouselPhotoUrl = p.urls.small;
-      carouselPhotoFull = p.urls.full;
-      document.getElementById('btn-dl-carousel-photo').disabled = false;
-    };
-    grid.appendChild(thumb);
-  });
-}
-
-async function loadMoreCarouselPhotos() {
-  carouselPhotoPage++;
-  let photos = await fetchPhotos(carouselKeywords, carouselPhotoPage);
-  if (!photos || photos.length === 0) {
-    carouselKeywords = [...carouselKeywords.slice(1), carouselKeywords[0]];
-    carouselPhotoPage = 1;
-    photos = await fetchPhotos(carouselKeywords, 1);
-  }
-  if (photos && photos.length > 0) renderCarouselPhotos(photos);
-}
-
-function dlCarouselPhoto() {
-  if (!carouselPhotoFull) return;
-  const a = document.createElement('a');
-  a.href = carouselPhotoFull;
-  a.download = 'w4x_photo_carousel.jpg';
-  a.target = '_blank';
-  a.click();
-}
-
-function copyCarouselCaption() {
-  navigator.clipboard.writeText(document.getElementById('carousel-caption').textContent).then(() => {
-    const t = document.getElementById('toast');
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 1800);
-  });
-}
-
-function toggleExtraTracks() {
-  const extra = document.getElementById('extra-tracks');
-  const btn = document.getElementById('btn-more-tracks');
-  if (extra.style.display === 'none') {
-    extra.style.display = 'flex';
-    btn.textContent = '− Masquer les tracks 6-10';
-  } else {
-    extra.style.display = 'none';
-    btn.textContent = "+ Ajouter jusqu'à 10 tracks";
-  }
-}
-
-async function importSingleFromScreenshot(file) {
-  if (!file) return;
-  const status = document.getElementById('single-screenshot-status');
-  status.textContent = 'Analyse en cours...';
-  status.style.color = 'var(--muted2)';
-
-  try {
-    const base64 = await new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result.split(',')[1]);
-      r.onerror = reject;
-      r.readAsDataURL(file);
-    });
-
-    const res = await fetch('https://w4x-img.onthew4x.workers.dev/api/claude', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 200,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: file.type || 'image/jpeg', data: base64 } },
-            { type: 'text', text: 'This is a Spotify screenshot. Extract the main track artist and title. Return ONLY JSON: {"artist": "...", "title": "..."}. No markdown.' }
-          ]
-        }]
-      })
-    });
-
-    const payload = await res.json();
-    const textBlock = payload.content?.find(b => b.type === 'text');
-    const txt = textBlock?.text?.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
-    const s = txt.indexOf('{'), e = txt.lastIndexOf('}');
-    const track = JSON.parse(txt.slice(s, e+1));
-
-    if (track.artist && track.title) {
-      const input = document.getElementById('track-input');
-      // Try to detect genre from existing value or leave for user
-      const currentGenre = input.value.match(/\((house|techno)\)/i)?.[1] || '';
-      input.value = track.artist + ' - ' + track.title + (currentGenre ? ' (' + currentGenre + ')' : ' (Techno)');
-      previewParse(input.value);
-      status.textContent = '✓ ' + track.artist + ' — ' + track.title;
-      status.style.color = '#5a9';
-    }
-  } catch(err) {
-    status.textContent = 'Erreur : ' + err.message;
-    status.style.color = '#e88';
-  }
-}
-
-async function importFromScreenshot(file) {
-  if (!file) return;
-
-  // Show preview
-  const reader = new FileReader();
-  reader.onload = e => {
-    document.getElementById('screenshot-img').src = e.target.result;
-    document.getElementById('screenshot-preview').style.display = 'block';
-  };
-  reader.readAsDataURL(file);
-
-  document.getElementById('screenshot-placeholder').style.display = 'none';
-  document.getElementById('screenshot-loading').style.display = 'block';
-
-  try {
-    // Convert to base64
-    const base64 = await new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result.split(',')[1]);
-      r.onerror = reject;
-      r.readAsDataURL(file);
-    });
-
-    const mediaType = file.type || 'image/jpeg';
-
-    // Send to Claude Vision via Worker
-    const res = await fetch('https://w4x-img.onthew4x.workers.dev/api/claude', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 500,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: { type: 'base64', media_type: mediaType, data: base64 }
-            },
-            {
-              type: 'text',
-              text: 'This is a Spotify screenshot. Extract all track names and artist names visible. Return ONLY a JSON array of up to 5 tracks: [{"artist": "...", "title": "..."}, ...]. No markdown, no explanation, just the JSON array.'
-            }
-          ]
-        }]
-      })
-    });
-
-    const payload = await res.json();
-    const textBlock = payload.content?.find(b => b.type === 'text');
-    if (!textBlock?.text) throw new Error('Pas de réponse');
-
-    let txt = textBlock.text.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
-    const s = txt.indexOf('['), e = txt.lastIndexOf(']');
-    const tracks = JSON.parse(txt.slice(s, e+1));
-
-    tracks.slice(0, 5).forEach((t, i) => {
-      if (t.artist && t.title) {
-        document.getElementById('ct' + (i+1)).value = t.artist + ' - ' + t.title;
-      }
-    });
-
-    document.getElementById('screenshot-loading').style.display = 'none';
-    document.getElementById('screenshot-placeholder').style.display = 'block';
-    document.getElementById('screenshot-placeholder').textContent = '✓ ' + tracks.length + ' track(s) détectée(s)';
-    document.getElementById('screenshot-placeholder').style.color = '#5a9';
-
-  } catch(err) {
-    document.getElementById('screenshot-loading').style.display = 'none';
-    document.getElementById('screenshot-placeholder').style.display = 'block';
-    document.getElementById('screenshot-placeholder').textContent = 'Erreur : ' + err.message;
-    document.getElementById('screenshot-placeholder').style.color = '#e88';
-  }
-}
-
-async function importSingleFromScreenshot(file) {
-  if (!file) return;
-  const status = document.getElementById('single-screenshot-status');
-  status.textContent = 'Analyse en cours...';
-  status.style.color = 'var(--muted2)';
-
-  try {
-    const base64 = await new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result.split(',')[1]);
-      r.onerror = reject;
-      r.readAsDataURL(file);
-    });
-
-    const res = await fetch('https://w4x-img.onthew4x.workers.dev/api/claude', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 200,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: file.type || 'image/jpeg', data: base64 } },
-            { type: 'text', text: 'This is a Spotify screenshot of one track. Extract the artist name and track title. Return ONLY a JSON object: {"artist": "...", "title": "..."}. No markdown, just JSON.' }
-          ]
-        }]
-      })
-    });
-
-    const payload = await res.json();
-    const textBlock = payload.content?.find(b => b.type === 'text');
-    if (!textBlock?.text) throw new Error('Pas de réponse');
-
-    let txt = textBlock.text.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
-    const s = txt.indexOf('{'), e = txt.lastIndexOf('}');
-    const track = JSON.parse(txt.slice(s, e+1));
-
-    if (track.artist && track.title) {
-      const input = document.getElementById('track-input');
-      input.value = track.artist + ' - ' + track.title;
-      previewParse(input.value);
-      status.textContent = '✓ ' + track.artist + ' – ' + track.title;
-      status.style.color = '#5a9';
-    }
-  } catch(err) {
-    status.textContent = 'Erreur : ' + err.message;
-    status.style.color = '#e88';
-  }
+  document.getElementById('ss-single-text').textContent='📷 Upload screenshot Spotify → remplit artiste & titre automatiquement';
+  document.getElementById('ss-single-text').className='screenshot-zone-text';
 }
 
 function resetCarousel() {
-  document.getElementById('carousel-result').style.display = 'none';
-  document.getElementById('carousel-theme').value = '';
-  [1,2,3,4,5,6,7,8,9,10].forEach(i => { const el = document.getElementById('ct'+i); if(el) el.value = ''; });
-  document.getElementById('extra-tracks').style.display = 'none';
-  document.getElementById('btn-more-tracks').textContent = "+ Ajouter jusqu\'à 10 tracks";
-  document.getElementById('btn-go-carousel').disabled = false;
-  carouselCanvases = []; slideTitreUrl = null;
+  document.getElementById('result-carousel').style.display='none';
+  hideErr('err-carousel');
+  document.getElementById('loader-carousel').classList.remove('visible');
+  for(let i=1;i<=10;i++) { const el=document.getElementById('ct'+i); if(el) el.value=''; }
+  document.getElementById('btn-go-carousel').disabled=false;
+  document.getElementById('ss-carousel-text').textContent='📷 Upload screenshot playlist Spotify → remplit les tracks automatiquement';
+  document.getElementById('ss-carousel-text').className='screenshot-zone-text';
 }
 
+document.getElementById('track-input').addEventListener('keydown', e=>{ if(e.key==='Enter') generate(); });
 </script>
 </body>
 </html>
