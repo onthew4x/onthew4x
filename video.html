@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OnTheW4x — Video Generator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#080808;--surface:#111;--surface2:#1a1a1a;--border:#222;--border2:#333;--white:#f0ede8;--muted:#555;--muted2:#888;--mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif}
+html,body{background:var(--bg);color:var(--white);font-family:var(--sans);min-height:100vh}
+body{display:flex;flex-direction:column;align-items:center;padding:48px 16px 80px}
+.header{text-align:center;margin-bottom:40px}
+.brand{font-family:var(--mono);font-size:10px;letter-spacing:.3em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+h1{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--white)}
+.tagline{font-size:13px;color:var(--muted2);margin-top:6px;font-weight:300}
+.card{width:100%;max-width:600px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:20px}
+.section-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:8px}
+.track-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:13px;color:var(--white);outline:none;transition:border-color .15s}
+.track-input::placeholder{color:var(--muted);font-style:italic}
+.track-input:focus{border-color:var(--muted2)}
+.mode-btn{flex:1;padding:12px;background:transparent;color:var(--muted);border:1px solid var(--border2);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .15s;border-radius:8px}
+.mode-btn.active{background:var(--white);color:var(--bg);border-color:var(--white)}
+.btn-go{width:100%;background:var(--white);color:var(--bg);border:none;border-radius:10px;padding:14px 20px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:opacity .15s}
+.btn-go:hover{opacity:.85}
+.btn-go:disabled{opacity:.3;cursor:not-allowed}
+.hint{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:6px}
+.loader{display:none;flex-direction:column;gap:8px}
+.loader.visible{display:flex}
+.step{font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.step.active{color:var(--white)}
+.step.done{color:var(--muted2)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.step.active .dot{background:var(--white);animation:pulse .8s ease-in-out infinite}
+.step.done .dot{background:var(--muted2)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.error-box{display:none;background:#1a0a0a;border:1px solid #3a1515;border-radius:10px;padding:14px 16px;font-size:12px;color:#e88;font-family:var(--mono);line-height:1.6}
+.error-box.visible{display:block}
+.result{display:none;flex-direction:column;gap:16px}
+.result.visible{display:flex}
+.preview-row{display:flex;gap:14px;align-items:flex-start}
+.preview-box{flex:1;display:flex;flex-direction:column;gap:8px}
+.preview-label{font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase}
+.track-info{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.track-name{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--white)}
+.track-meta{font-size:11px;color:var(--muted2);margin-top:4px}
+.progress-bar{width:100%;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;display:none}
+.progress-fill{height:100%;background:var(--white);border-radius:2px;transition:width .3s}
+.btn-dl{width:100%;background:var(--white);color:var(--bg);border:none;border-radius:10px;padding:14px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:opacity .15s}
+.btn-dl:hover{opacity:.85}
+.btn-dl:disabled{opacity:.3;cursor:not-allowed}
+.btn-reset{width:100%;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:var(--mono);font-size:11px;cursor:pointer}
+.btn-reset:hover{color:var(--white)}
+.no-preview{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-family:var(--mono);font-size:11px;color:var(--muted2)}
+video{width:100%;border-radius:8px;display:block}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="brand">onthew4x</div>
+  <h1>Video Generator</h1>
+  <p class="tagline">Cover circulaire + preview Spotify → vidéo 30s</p>
+</header>
+
+<div class="card">
+
+  <div>
+    <span class="section-label">Track</span>
+    <input class="track-input" id="track-input" type="text"
+      placeholder="Jeff Mills - The Bells"
+      autocomplete="off" spellcheck="false"/>
+    <div class="hint" style="margin-top:6px">Format : Artiste - Titre</div>
+  </div>
+
+  <div>
+    <span class="section-label">Genre (fond de la cover)</span>
+    <div style="display:flex;gap:8px">
+      <button class="mode-btn active" id="btn-house" onclick="setGenre('house')">House — fond blanc</button>
+      <button class="mode-btn" id="btn-techno" onclick="setGenre('techno')">Techno — fond noir</button>
+    </div>
+  </div>
+
+  <button class="btn-go" id="btn-go" onclick="generate()">Générer la vidéo</button>
+
+  <div class="loader" id="loader">
+    <div class="step" id="s1"><div class="dot"></div>Recherche sur Spotify...</div>
+    <div class="step" id="s2"><div class="dot"></div>Téléchargement preview audio (30s)...</div>
+    <div class="step" id="s3"><div class="dot"></div>Création de la vidéo...</div>
+  </div>
+
+  <div class="error-box" id="err"></div>
+
+  <div class="result" id="result">
+    <div class="track-info">
+      <div class="track-name" id="r-name"></div>
+      <div class="track-meta" id="r-meta"></div>
+    </div>
+    <div id="no-preview-warning" class="no-preview" style="display:none">
+      ⚠️ Pas de preview Spotify disponible pour cette track — vidéo générée sans son.
+    </div>
+    <div class="preview-row">
+      <div class="preview-box">
+        <div class="preview-label">Aperçu vidéo</div>
+        <video id="video-preview" controls></video>
+      </div>
+    </div>
+    <div class="progress-bar" id="progress-bar">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <button class="btn-dl" id="btn-dl" onclick="downloadVideo()">↓ Télécharger la vidéo MP4</button>
+    <button class="btn-reset" onclick="reset()">↺ Nouvelle track</button>
+  </div>
+
+</div>
+
+<!-- Load ffmpeg.wasm -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg/0.11.6/ffmpeg.min.js"></script>
+
+<script>
+const SPOTIFY_CLIENT_ID = '20a6b538a7d64b3f99e08397dee6b669';
+const SPOTIFY_CLIENT_SECRET = '21b0cacf77d44b5790ffd53c629202c7';
+const PROXY = 'https://w4x-img.onthew4x.workers.dev/?url=';
+
+let spotifyToken = null, spotifyTokenExpiry = 0;
+let genre = 'house';
+let videoBlob = null;
+let ffmpegLoaded = false;
+let ffmpegInstance = null;
+
+function setGenre(g) {
+  genre = g;
+  document.getElementById('btn-house').classList.toggle('active', g === 'house');
+  document.getElementById('btn-techno').classList.toggle('active', g === 'techno');
+}
+
+function setStep(n) {
+  ['s1','s2','s3'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    el.className = 'step' + (i+1 < n ? ' done' : i+1 === n ? ' active' : '');
+  });
+}
+
+// ── SPOTIFY ───────────────────────────────────────────────────────────────────
+async function getSpotifyToken() {
+  if (spotifyToken && Date.now() < spotifyTokenExpiry) return spotifyToken;
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': 'Basic ' + btoa(SPOTIFY_CLIENT_ID + ':' + SPOTIFY_CLIENT_SECRET)
+    },
+    body: 'grant_type=client_credentials'
+  });
+  const d = await res.json();
+  spotifyToken = d.access_token;
+  spotifyTokenExpiry = Date.now() + (d.expires_in - 60) * 1000;
+  return spotifyToken;
+}
+
+async function searchSpotify(artist, title) {
+  const token = await getSpotifyToken();
+  for (const q of [`track:${title} artist:${artist}`, `${title} ${artist}`]) {
+    const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=1`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const d = await res.json();
+    const track = d?.tracks?.items?.[0];
+    if (track) return {
+      coverUrl: track.album.images[0]?.url || '',
+      previewUrl: track.preview_url || '',
+      name: track.name,
+      artist: track.artists[0]?.name || artist,
+      album: track.album.name,
+      year: track.album.release_date?.split('-')[0] || ''
+    };
+  }
+  return null;
+}
+
+// ── CANVAS CIRCLE COVER ───────────────────────────────────────────────────────
+function drawCircleCover(coverUrl, genre) {
+  return new Promise(resolve => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1080; canvas.height = 1080;
+    const ctx = canvas.getContext('2d');
+    const S=1080, C=Math.round(S*.98), O=Math.round((S-C)/2);
+    ctx.fillStyle = genre === 'house' ? '#ffffff' : '#000000';
+    ctx.fillRect(0,0,S,S);
+
+    if (!coverUrl) { resolve(canvas); return; }
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const sw=img.width, sh=img.height, side=Math.min(sw,sh);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(O+C/2, O+C/2, C/2, 0, Math.PI*2);
+      ctx.clip();
+      ctx.drawImage(img,(sw-side)/2,(sh-side)/2,side,side,O,O,C,C);
+      ctx.restore();
+      resolve(canvas);
+    };
+    img.onerror = () => {
+      // Try via proxy
+      const img2 = new Image();
+      img2.onload = () => {
+        const sw=img2.width, sh=img2.height, side=Math.min(sw,sh);
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(O+C/2, O+C/2, C/2, 0, Math.PI*2);
+        ctx.clip();
+        ctx.drawImage(img2,(sw-side)/2,(sh-side)/2,side,side,O,O,C,C);
+        ctx.restore();
+        resolve(canvas);
+      };
+      img2.onerror = () => resolve(canvas);
+      img2.src = PROXY + encodeURIComponent(coverUrl);
+    };
+    img.src = coverUrl;
+  });
+}
+
+// ── CREATE VIDEO WITH CANVAS + AUDIO ─────────────────────────────────────────
+async function createVideo(canvas, audioUrl, duration) {
+  // Use MediaRecorder API to record canvas + audio
+  const stream = canvas.captureStream(30);
+
+  let audioCtx, source, dest;
+  if (audioUrl) {
+    try {
+      audioCtx = new AudioContext();
+      const audioRes = await fetch(PROXY + encodeURIComponent(audioUrl));
+      const arrayBuffer = await audioRes.arrayBuffer();
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      dest = audioCtx.createMediaStreamDestination();
+      source = audioCtx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(dest);
+      source.connect(audioCtx.destination);
+      // Add audio track to stream
+      dest.stream.getAudioTracks().forEach(track => stream.addTrack(track));
+    } catch(e) {
+      console.warn('Audio failed:', e);
+    }
+  }
+
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+      ? 'video/webm;codecs=vp9,opus'
+      : MediaRecorder.isTypeSupported('video/webm')
+      ? 'video/webm'
+      : 'video/mp4';
+
+    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8000000 });
+    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    recorder.onstop = () => {
+      const blob = new Blob(chunks, { type: mimeType });
+      resolve(blob);
+      if (audioCtx) audioCtx.close();
+    };
+    recorder.onerror = reject;
+
+    recorder.start();
+    if (source) source.start(0);
+
+    // Animate canvas with subtle zoom
+    const startTime = performance.now();
+    const S = 1080;
+    const offscreen = document.createElement('canvas');
+    offscreen.width = S; offscreen.height = S;
+    const offCtx = offscreen.getContext('2d');
+
+    // Copy original canvas content to offscreen
+    offCtx.drawImage(canvas, 0, 0);
+
+    const animCanvas = document.createElement('canvas');
+    animCanvas.width = S; animCanvas.height = S;
+    const animCtx = animCanvas.getContext('2d');
+
+    // Replace stream canvas with animated one
+    const animStream = animCanvas.captureStream(30);
+    if (audioUrl && dest) {
+      dest.stream.getAudioTracks().forEach(track => animStream.addTrack(track));
+    }
+
+    function animate() {
+      const elapsed = (performance.now() - startTime) / 1000;
+      if (elapsed >= duration) {
+        recorder.stop();
+        return;
+      }
+
+      // Subtle zoom: 1.0 → 1.05 over duration
+      const zoom = 1 + (elapsed / duration) * 0.05;
+      const offset = (S - S * zoom) / 2;
+
+      animCtx.clearRect(0, 0, S, S);
+      animCtx.drawImage(offscreen, offset, offset, S * zoom, S * zoom);
+
+      // Update progress
+      const pct = (elapsed / duration) * 100;
+      document.getElementById('progress-fill').style.width = pct + '%';
+
+      requestAnimationFrame(animate);
+    }
+
+    // Use animCanvas stream for recorder
+    const finalChunks = [];
+    const finalRecorder = new MediaRecorder(animStream, { mimeType, videoBitsPerSecond: 8000000 });
+    finalRecorder.ondataavailable = e => { if (e.data.size > 0) finalChunks.push(e.data); };
+    finalRecorder.onstop = () => {
+      const blob = new Blob(finalChunks, { type: mimeType });
+      resolve(blob);
+      if (audioCtx) audioCtx.close();
+    };
+
+    // Stop the original recorder immediately
+    recorder.stop();
+
+    finalRecorder.start();
+    if (source) source.start(0);
+    animate();
+
+    setTimeout(() => {
+      if (finalRecorder.state !== 'inactive') finalRecorder.stop();
+    }, duration * 1000 + 500);
+  });
+}
+
+// ── MAIN ──────────────────────────────────────────────────────────────────────
+async function generate() {
+  const raw = document.getElementById('track-input').value.trim();
+  if (!raw) return;
+
+  const sep = raw.indexOf(' - ');
+  const artist = sep > -1 ? raw.slice(0, sep).trim() : raw;
+  const title = sep > -1 ? raw.slice(sep + 3).trim() : raw;
+
+  document.getElementById('result').classList.remove('visible');
+  document.getElementById('err').classList.remove('visible');
+  document.getElementById('loader').classList.add('visible');
+  document.getElementById('btn-go').disabled = true;
+  document.getElementById('progress-bar').style.display = 'none';
+  videoBlob = null;
+
+  try {
+    setStep(1);
+
+    // Search Spotify
+    const track = await searchSpotify(artist, title);
+    if (!track) throw new Error('Track non trouvée sur Spotify — vérifiez l\'orthographe');
+
+    document.getElementById('r-name').textContent = `${track.artist} – ${track.name}`;
+    document.getElementById('r-meta').textContent = `${track.album} · ${track.year}`;
+
+    setStep(2);
+
+    // Draw circle cover
+    const canvas = await drawCircleCover(track.coverUrl, genre);
+
+    // Check preview availability
+    if (!track.previewUrl) {
+      document.getElementById('no-preview-warning').style.display = 'block';
+    } else {
+      document.getElementById('no-preview-warning').style.display = 'none';
+    }
+
+    setStep(3);
+    document.getElementById('progress-bar').style.display = 'block';
+
+    // Create video
+    const blob = await createVideo(canvas, track.previewUrl, 30);
+    videoBlob = blob;
+
+    // Show preview
+    const url = URL.createObjectURL(blob);
+    document.getElementById('video-preview').src = url;
+
+    document.getElementById('loader').classList.remove('visible');
+    document.getElementById('result').classList.add('visible');
+    document.getElementById('btn-go').disabled = false;
+
+  } catch(err) {
+    document.getElementById('loader').classList.remove('visible');
+    document.getElementById('btn-go').disabled = false;
+    document.getElementById('err').textContent = 'Erreur : ' + err.message;
+    document.getElementById('err').classList.add('visible');
+  }
+}
+
+function downloadVideo() {
+  if (!videoBlob) return;
+  const name = document.getElementById('track-input').value.trim().replace(/\s+/g,'_') || 'video';
+  const ext = videoBlob.type.includes('mp4') ? 'mp4' : 'webm';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(videoBlob);
+  a.download = `${name}_w4x.${ext}`;
+  a.click();
+}
+
+function reset() {
+  videoBlob = null;
+  document.getElementById('result').classList.remove('visible');
+  document.getElementById('err').classList.remove('visible');
+  document.getElementById('track-input').value = '';
+  document.getElementById('btn-go').disabled = false;
+  document.getElementById('progress-bar').style.display = 'none';
+  document.getElementById('progress-fill').style.width = '0%';
+}
+
+document.getElementById('track-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') generate();
+});
+</script>
+</body>
+</html>
