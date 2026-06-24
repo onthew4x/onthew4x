@@ -641,7 +641,7 @@ async function generateCarousel() {
       headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 1500,
+        max_tokens: 3000,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         system: CAROUSEL_SYSTEM,
         messages: [{ role: 'user', content: `Find original label and year for each track. Search bandcamp/discogs.\n\nTracks:\n${tracks.map((t,i)=>`${i+1}. ${t}`).join('\n')}\n\nReturn JSON array only.` }]
@@ -655,7 +655,13 @@ async function generateCarousel() {
 
     let txt = textBlock.text.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
     const s = txt.indexOf('['), e2 = txt.lastIndexOf(']');
-    const trackData = JSON.parse(txt.slice(s, e2 + 1));
+    if (s < 0 || e2 < 0) throw new Error('Réponse JSON invalide — réessayez');
+    let trackData;
+    try {
+      trackData = JSON.parse(txt.slice(s, e2 + 1));
+    } catch(parseErr) {
+      throw new Error('JSON incomplet — réessayez');
+    }
 
     setStep(3, 'c');
 
