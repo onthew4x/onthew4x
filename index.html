@@ -642,9 +642,8 @@ async function generateCarousel() {
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
         max_tokens: 3000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         system: CAROUSEL_SYSTEM,
-        messages: [{ role: 'user', content: `Find original label and year for each track. Search bandcamp/discogs.\n\nTracks:\n${tracks.map((t,i)=>`${i+1}. ${t}`).join('\n')}\n\nReturn JSON array only.` }]
+        messages: [{ role: 'user', content: `Find original label and year for each track using your knowledge.\n\nTracks:\n${tracks.map((t,i)=>`${i+1}. ${t}`).join('\n')}\n\nReturn JSON array only.` }]
       })
     });
     clearTimeout(tid);
